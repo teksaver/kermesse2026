@@ -1,9 +1,49 @@
+<?php
+// Chargement des variables d'environnement depuis le fichier .env
+$dbStatus = 'En attente';
+$dbMessage = 'Veuillez configurer : DB_HOST, DB_USER, DB_NAME';
+$tables = [];
+$isConnected = false;
+
+$envFile = __DIR__ . '/.env';
+$env = file_exists($envFile) ? parse_ini_file($envFile) : [];
+
+$dbHost = $env['DB_HOST'] ?? getenv('DB_HOST');
+$dbUser = $env['DB_USER'] ?? getenv('DB_USER');
+$dbPass = $env['DB_PASS'] ?? getenv('DB_PASS');
+$dbName = $env['DB_NAME'] ?? getenv('DB_NAME');
+
+if ($dbHost && $dbUser && $dbName) {
+    try {
+        $dsn = "mysql:host=$dbHost;dbname=$dbName;charset=utf8mb4";
+        $pdo = new PDO($dsn, $dbUser, $dbPass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_TIMEOUT => 3 // Timeout court au cas où le serveur est inaccessible
+        ]);
+        
+        $isConnected = true;
+        $dbStatus = 'Connecté';
+        $dbMessage = 'Connexion à la base de données réussie.';
+        
+        // Lister toutes les tables de la base
+        $stmt = $pdo->query('SHOW TABLES');
+        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    } catch (PDOException $e) {
+        $dbStatus = 'Erreur';
+        $dbMessage = $e->getMessage();
+    }
+} else {
+    $dbStatus = 'Non configuré';
+    $dbMessage = "Le fichier d'environnement n'a pas pu être lu ou les variables sont incomplètes.";
+}
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Hébergement PHP</title>
+    <title>Test Hébergement PHP & MySQL</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -36,7 +76,7 @@
             border-radius: 16px;
             padding: 40px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            max-width: 600px;
+            max-width: 650px;
             width: 100%;
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -94,7 +134,6 @@
         .version {
             font-family: monospace;
             font-size: 1.5rem;
-            color: #10B981;
             margin: 10px 0;
             font-weight: 700;
         }
@@ -126,12 +165,33 @@
             70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
             100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
+
+        .table-list {
+            margin-top: 15px;
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .table-list h3 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: #94A3B8;
+        }
+
+        .table-list ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #F8FAFC;
+            font-size: 0.95rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Félicitations !</h1>
-        <p>Si vous voyez cette page, cela signifie que votre déploiement SFTP a fonctionné et que l'hébergement exécute correctement le PHP.</p>
+        <p>Déploiement SFTP réussi. Le serveur interprète correctement PHP et peut désormais communiquer avec la base de données.</p>
         
         <div class="status">
             <div class="status-dot"></div>
@@ -140,12 +200,39 @@
 
         <div class="php-info">
             <h2>Informations Serveur</h2>
-            <div class="version">
+            <div class="version" style="color: #10B981;">
                 PHP <?php echo phpversion(); ?>
             </div>
             <p style="margin-bottom: 0; font-size: 0.9rem;">
                 Serveur synchronisé à : <?php echo date('H:i:s, d/m/Y'); ?>
             </p>
+        </div>
+
+        <!-- Section Base de données -->
+        <div class="php-info" style="margin-top: 20px;">
+            <h2>Connexion MySQL (PDO)</h2>
+            <div class="version" style="color: <?php echo $isConnected ? '#10B981' : ($dbStatus === 'Erreur' ? '#EF4444' : '#F59E0B'); ?>;">
+                <?php echo htmlspecialchars($dbStatus); ?>
+            </div>
+            
+            <p style="margin-bottom: 0; font-size: 0.9rem; color: #CBD5E1;">
+                <?php echo htmlspecialchars($dbMessage); ?>
+            </p>
+            
+            <?php if ($isConnected): ?>
+                <div class="table-list">
+                    <h3>Tables actives (<?php echo count($tables); ?>) :</h3>
+                    <?php if (count($tables) > 0): ?>
+                        <ul>
+                            <?php foreach ($tables as $t): ?>
+                                <li><?php echo htmlspecialchars($t); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php else: ?>
+                        <p style="margin:0; font-size: 0.9rem;"><i>La base de données est complètement vide pour le moment.</i></p>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </body>

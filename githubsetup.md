@@ -14,15 +14,26 @@ Pour des raisons de sécurité évidentes, vous ne devez **jamais** inscrire vos
 1. Allez sur la page principale de votre dépôt sur le site GitHub.
 2. Cliquez sur l'onglet **Settings** ⚙️ (Paramètres).
 3. Dans la barre latérale de gauche, descendez dans la section "Security" et ouvrez **Secrets and variables**, puis cliquez sur **Actions**.
-4. Cliquez sur le bouton vert **New repository secret** et ajoutez ces 3 secrets (le nom doit être rigoureusement exact) :
+4. Cliquez sur le bouton vert **New repository secret** pour ajouter vos différents secrets (le nom doit être rigoureusement exact) :
 
-### Les 3 secrets à créer :
+### Les 3 secrets pour le déploiement SFTP :
 - **Nom**: `SFTP_SERVER`
-  - *Valeur*: L'adresse host de votre hébergeur
+  - *Valeur*: L'adresse host de votre serveur
 - **Nom**: `SFTP_USERNAME`
   - *Valeur*: L'identifiant SFTP fourni par votre hébergeur
 - **Nom**: `SFTP_PASSWORD` 
   - *Valeur*: Votre mot de passe de connexion SFTP. 
+
+### Les 4 secrets pour la connexion à la Base de Données (MySQL) :
+*Ces variables seront utilisées de manière invisible par le script de déploiement sur GitHub pour recréer proprement votre fichier de configuration* (`.env`).
+- **Nom**: `DB_HOST`
+  - *Valeur*: L'adresse de connexion à MySQL (souvent `localhost` ou `127.0.0.1` chez la plupart des hébergeurs)
+- **Nom**: `DB_NAME`
+  - *Valeur*: Le nom de votre base de données SQL
+- **Nom**: `DB_USER`
+  - *Valeur*: Votre identifiant MySQL
+- **Nom**: `DB_PASS`
+  - *Valeur*: Le mot de passe associé à la base de données 
 
 ## 3. Le dossier distant et le port
 Le fichier `.github/workflows/deploy.yml` a été pré-configuré avec vos paramètres spécifiques. Vous n'avez donc, à priori, plus rien à y modifier. 
