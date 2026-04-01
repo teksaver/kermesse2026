@@ -18,10 +18,10 @@ jobs:
 
       - name: Préparation du fichier .env
         run: |
-          echo "DB_HOST=${{ secrets.DB_HOST }}" > .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
+          echo "DB_HOST='${{ secrets.DB_HOST }}'" > .env
+          echo "DB_NAME='${{ secrets.DB_NAME }}'" >> .env
+          echo "DB_USER='${{ secrets.DB_USER }}'" >> .env
+          echo "DB_PASS='${{ secrets.DB_PASS }}'" >> .env
 
       - name: Déploiement des fichiers via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
@@ -30,8 +30,8 @@ jobs:
           server: ${{ secrets.SFTP_SERVER }}
           port: 115 # Port personnalisé pour le SFTP
           password: ${{ secrets.SFTP_PASSWORD }}
-          # Exclure le dossier .github pour ne pas le pousser sur le serveur
-          local_path: './*'
+          # Utiliser './' pour inclure absolument les fichiers cachés comme .env !
+          local_path: './'
           remote_path: '/httpdocs' # Dossier racine ciblé sur le serveur
           sftp_only: true # Force l'utilisation pure du protocole SFTP sans commandes SSH
           args: '-o ConnectTimeout=5'
