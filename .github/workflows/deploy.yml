@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.SFTP_USERNAME }}
           server: ${{ secrets.SFTP_SERVER }}
           port: 115 # Port personnalisé pour le SFTP
-          ssh_private_key: ${{ secrets.SFTP_PRIVATE_KEY }}
+          password: ${{ secrets.SFTP_PASSWORD }}
           # Exclure le dossier .github pour ne pas le pousser sur le serveur
           local_path: './*'
           remote_path: '/chemin/vers/votre/public_html' # /!\ À modifier selon votre hébergement

@@ -6,7 +6,7 @@ Ce guide explique comment configurer votre dépôt GitHub pour que le déploieme
 Vous aurez besoin des informations fournies par votre hébergeur (généralement visibles depuis l'espace client ou le panel d'administration web type cPanel) :
 - **L'adresse du serveur** (Hôte) : par exemple `ftp.votre-domaine.com` ou une adresse IP.
 - **Votre identifiant** (Nom d'utilisateur).
-- **Votre clé privée SSH** (recommandé et plus sécurisé) OU **votre mot de passe**. Dans le cas d'une clé, votre hébergeur doit autoriser les accès SSH/SFTP par clés.
+- **Votre mot de passe SFTP** pour vous connecter au serveur.
 
 ## 2. Ajouter vos secrets sur GitHub
 Pour des raisons de sécurité évidentes, vous ne devez **jamais** inscrire vos identifiants en clair dans les fichiers (`deploy.yml`). Pour cela, nous utilisons les "Secrets GitHub" :
@@ -21,13 +21,8 @@ Pour des raisons de sécurité évidentes, vous ne devez **jamais** inscrire vos
   - *Valeur*: L'adresse host de votre hébergeur
 - **Nom**: `SFTP_USERNAME`
   - *Valeur*: L'identifiant SFTP fourni par votre hébergeur
-- **Nom**: `SFTP_PRIVATE_KEY` 
-  - *Valeur*: Le contenu texte complet de votre clé privée (qui commence de manière classique par `-----BEGIN OPENSSH PRIVATE KEY-----` ou `-----BEGIN RSA PRIVATE KEY-----`). 
-
-> [!CAUTION]  
-> **Si vous n'avez pas de clé privée et utilisez uniquement un mot de passe :**
-> - Au lieu de créer le secret avec la clé, créez un secret nommé **`SFTP_PASSWORD`** (avec votre mot de passe).
-> - Ensuite, modifiez le fichier de votre code situé dans `.github/workflows/deploy.yml` pour remplacer la propriété `ssh_private_key: ${{ secrets.SFTP_PRIVATE_KEY }}` par `password: ${{ secrets.SFTP_PASSWORD }}`.
+- **Nom**: `SFTP_PASSWORD` 
+  - *Valeur*: Votre mot de passe de connexion SFTP. 
 
 ## 3. Ajuster le dossier distant et le port
 Ouvrez le fichier local `.github/workflows/deploy.yml` ou modifiez-le directement sur GitHub.
