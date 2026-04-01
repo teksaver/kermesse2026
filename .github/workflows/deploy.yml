@@ -9,6 +9,8 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     
     steps:
       - name: Checkout du code
@@ -23,5 +25,5 @@ jobs:
           password: ${{ secrets.SFTP_PASSWORD }}
           # Exclure le dossier .github pour ne pas le pousser sur le serveur
           local_path: './*'
-          remote_path: '/chemin/vers/votre/public_html' # /!\ À modifier selon votre hébergement
+          remote_path: '/httpdocs' # Dossier racine ciblé sur le serveur
           args: '-o ConnectTimeout=5'

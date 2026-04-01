@@ -24,21 +24,12 @@ Pour des raisons de sécurité évidentes, vous ne devez **jamais** inscrire vos
 - **Nom**: `SFTP_PASSWORD` 
   - *Valeur*: Votre mot de passe de connexion SFTP. 
 
-## 3. Ajuster le dossier distant et le port
-Ouvrez le fichier local `.github/workflows/deploy.yml` ou modifiez-le directement sur GitHub.
+## 3. Le dossier distant et le port
+Le fichier `.github/workflows/deploy.yml` a été pré-configuré avec vos paramètres spécifiques. Vous n'avez donc, à priori, plus rien à y modifier. 
 
-Notez que le **port SFTP 115** a été explicitement ajouté à la configuration (`port: 115`) car il diffère du port standard (22).
-
-Cherchez la ligne ci-dessous dans la configuration :
-```yaml
-remote_path: '/chemin/vers/votre/public_html'
-```
-Il faut la remplacer par le chemin exact du répertoire racine web sur votre serveur distant.
-Chez de nombreux hébergeurs mutualisés classiques, ce dossier s'appelle généralement :
-- `/public_html/`
-- `/www/`
-- `/htdocs/`
-- Ou parfois juste `/` si votre compte FTP est déjà limité au dossier web.
+Notez que ces options spécifiques à votre hébergement y ont été explicitement intégrées :
+- Le **port SFTP 115** (`port: 115`) car il diffère du port standard (22).
+- Le **dossier cible `/httpdocs`** (`remote_path: '/httpdocs'`) qui correspond à la racine web de votre serveur.
 
 ## 4. Testez !
 Une fois les configurations faites et le dernier `push` de `deploy.yml` réalisé vers votre branche `main` :
