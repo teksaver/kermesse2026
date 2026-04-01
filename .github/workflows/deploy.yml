@@ -26,4 +26,5 @@ jobs:
           # Exclure le dossier .github pour ne pas le pousser sur le serveur
           local_path: './*'
           remote_path: '/httpdocs' # Dossier racine ciblé sur le serveur
+          sftp_only: true # Force l'utilisation pure du protocole SFTP sans commandes SSH
           args: '-o ConnectTimeout=5'
