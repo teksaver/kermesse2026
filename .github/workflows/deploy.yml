@@ -1,0 +1,27 @@
+name: Deploy via SFTP
+
+on:
+  push:
+    branches: [ "main" ] # Se déclenche à chaque push sur la branche main
+  workflow_dispatch: # Permet de lancer manuellement depuis l'interface GitHub
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Déploiement des fichiers via SFTP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          username: ${{ secrets.SFTP_USERNAME }}
+          server: ${{ secrets.SFTP_SERVER }}
+          port: 115 # Port personnalisé pour le SFTP
+          ssh_private_key: ${{ secrets.SFTP_PRIVATE_KEY }}
+          # Exclure le dossier .github pour ne pas le pousser sur le serveur
+          local_path: './*'
+          remote_path: '/chemin/vers/votre/public_html' # /!\ À modifier selon votre hébergement
+          args: '-o ConnectTimeout=5'
