@@ -40,6 +40,16 @@ if ('' === $expectedSecret || !hash_equals($expectedSecret, (string) $suppliedSe
     return;
 }
 
+if (isset($_GET['action']) && 'list' === $_GET['action']) {
+    header('Content-Type: text/plain');
+    $files = scandir($projectRoot);
+    foreach ($files as $file) {
+        $path = $projectRoot . '/' . $file;
+        echo $file . (is_dir($path) ? '/' : (' (' . filesize($path) . ' bytes)')) . "\n";
+    }
+    return;
+}
+
 if (isset($_GET['action']) && 'logs' === $_GET['action']) {
     header('Content-Type: text/plain');
     $logFile = $projectRoot.'/var/log/prod.log';
