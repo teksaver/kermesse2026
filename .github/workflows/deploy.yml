@@ -52,7 +52,69 @@ jobs:
         env:
           APP_ENV: prod
           APP_DEBUG: 0
-        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+        run: composer install --no-dev --optimize-autoloader --classmap-authoritative --no-interaction --prefer-dist --no-progress
+
+      - name: Préparer le bundle de déploiement
+        run: |
+          mkdir -p deploy
+          rsync -a \
+            --delete \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude 'tests/' \
+            --exclude 'var/' \
+            --exclude 'node_modules/' \
+            --exclude '.phpunit.cache/' \
+            --exclude 'Dockerfile' \
+            --exclude 'compose.yaml' \
+            --exclude 'compose.override.yaml' \
+            --exclude 'githubsetup.md' \
+            --exclude 'LICENSE' \
+            ./ deploy/
+
+      - name: Préparer le bootstrap initial
+        run: |
+          mkdir -p bootstrap
+          rsync -a \
+            --delete \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude 'tests/' \
+            --exclude 'var/' \
+            --exclude 'vendor/' \
+            --exclude 'node_modules/' \
+            --exclude '.phpunit.cache/' \
+            --exclude 'deploy/' \
+            --exclude 'bootstrap/' \
+            --exclude 'deploy-package.zip' \
+            --exclude 'Dockerfile' \
+            --exclude 'compose.yaml' \
+            --exclude 'compose.override.yaml' \
+            --exclude 'githubsetup.md' \
+            --exclude 'LICENSE' \
+            ./ bootstrap/
+
+      - name: Créer l'archive de déploiement
+        run: |
+          rm -f deploy-package.zip
+          cd deploy
+          zip -rq ../deploy-package.zip .
+
+      - name: Bootstrap des fichiers applicatifs
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          username: ${{ secrets.SFTP_USERNAME }}
+          server: ${{ secrets.SFTP_SERVER }}
+          port: 115
+          password: ${{ secrets.SFTP_PASSWORD }}
+          local_path: './bootstrap/'
+          remote_path: '/'
+          sftp_only: true
+          args: '-o ConnectTimeout=5'
+
+      - name: Recharger le cache applicatif
+        run: |
+          curl --fail --show-error --silent -X POST "https://${{ secrets.SITE_URL }}/webhook/migrations" -d "secret=${{ secrets.WEBHOOK_SECRET }}"
 
       - name: Déploiement des fichiers via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
@@ -61,12 +123,11 @@ jobs:
           server: ${{ secrets.SFTP_SERVER }}
           port: 115 # Port personnalisé pour le SFTP
           password: ${{ secrets.SFTP_PASSWORD }}
-          # Utiliser './' pour inclure absolument les fichiers cachés comme .env !
-          local_path: './'
+          local_path: './deploy-package.zip'
           remote_path: '/' # Déploiement à la racine de l'hébergement
           sftp_only: true # Force l'utilisation pure du protocole SFTP sans commandes SSH
           args: '-o ConnectTimeout=5'
 
-      - name: Exécution des migrations (Webhook)
+      - name: Déploiement et migrations (Webhook)
         run: |
-          curl --fail --show-error --silent -X POST "https://${{ secrets.SITE_URL }}/webhook/migrations" -d "secret=${{ secrets.WEBHOOK_SECRET }}"
+          curl --fail --show-error --silent -X POST "https://${{ secrets.SITE_URL }}/webhook/deploy" -d "secret=${{ secrets.WEBHOOK_SECRET }}"

@@ -81,17 +81,29 @@ Notez que ces options spécifiques à votre hébergement y ont été expliciteme
 Une fois les configurations faites et le dernier `push` de `deploy.yml` réalisé vers votre branche `main` :
 1. Allez dans l'onglet **Actions** de votre dépôt GitHub.
 2. Vous verrez l'exécution de "Deploy via SFTP".
-3. Cliquez dessus pour voir la progression : si tout est vert, les fichiers ont ete copies puis la route `/webhook/migrations` a execute `doctrine:migrations:migrate` sur l'hebergement.
+3. Cliquez dessus pour voir la progression : le workflow commence par envoyer un petit bootstrap applicatif, recharge le cache Symfony via `/webhook/migrations`, puis envoie `deploy-package.zip` et appelle `/webhook/deploy` pour decompresser l'archive et executer les migrations.
 
 ## 5. Pourquoi les migrations passent par GitHub Actions ?
 Ouvaton n'expose pas de GUI pour lancer des commandes Doctrine apres le transfert SFTP. Le workflow de deploiement contourne proprement cette limitation :
 
 1. GitHub Actions prepare `.env.local` avec les secrets de production.
-2. Les fichiers sont envoyes par SFTP dans `httpdocs`.
-3. GitHub appelle ensuite le webhook Symfony protege par `WEBHOOK_SECRET`.
-4. Ce webhook execute `doctrine:migrations:migrate --no-interaction --allow-no-migration` directement sur le serveur.
+2. GitHub construit un bundle de deploiement et un bootstrap applicatif leger.
+3. Le bootstrap est envoye une premiere fois par SFTP pour mettre a jour les routes et les webhooks.
+4. GitHub appelle `/webhook/migrations`, qui vide et rechauffe le cache Symfony puis lance les migrations.
+5. GitHub construit ensuite l'archive `deploy-package.zip` et l'envoie par SFTP.
+6. GitHub appelle `/webhook/deploy`.
+7. Le webhook decompresse l'archive directement sur le serveur puis execute les migrations.
 
 Ainsi, les migrations restent versionnees dans Git, rejouables, et ne dependent d'aucune intervention manuelle dans l'hebergeur.
+
+## 5.bis Premiere mise en place du deploiement zip
+Le workflow gere maintenant automatiquement la premiere mise en place :
+
+- il pousse d'abord un bootstrap leger pour rendre les nouveaux webhooks disponibles
+- il recharge ensuite le cache Symfony
+- puis il bascule sur le mode zip
+
+Vous n'avez donc pas besoin d'un deploiement manuel intermediaire.
 
 ## 6. Delivrabilite e-mail et anti-spam
 Le workflow peut injecter correctement les identifiants SMTP, mais la delivrabilite depend aussi de la configuration DNS de votre domaine. Pour limiter fortement le risque de spam :
