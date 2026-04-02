@@ -186,8 +186,16 @@ jobs:
       - name: Recharger le cache applicatif
         run: |
           http_code=$(curl --show-error --silent --output webhook-bootstrap-response.json --write-out "%{http_code}" -X POST "https://${{ vars.SITE_URL }}/index.php/webhook/migrations" -d "secret=${{ secrets.WEBHOOK_SECRET }}")
-          cat webhook-bootstrap-response.json
-          test "$http_code" -ge 200 -a "$http_code" -lt 300
+          echo "Webhook bootstrap HTTP status: $http_code"
+          echo "Webhook bootstrap response:"
+          if [ -s webhook-bootstrap-response.json ]; then
+            cat webhook-bootstrap-response.json
+          else
+            echo "<empty response body>"
+          fi
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            exit 1
+          fi
 
       - name: Déploiement des fichiers via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
@@ -204,5 +212,13 @@ jobs:
       - name: Déploiement et migrations (Webhook)
         run: |
           http_code=$(curl --show-error --silent --output webhook-deploy-response.json --write-out "%{http_code}" -X POST "https://${{ vars.SITE_URL }}/index.php/webhook/deploy" -d "secret=${{ secrets.WEBHOOK_SECRET }}")
-          cat webhook-deploy-response.json
-          test "$http_code" -ge 200 -a "$http_code" -lt 300
+          echo "Webhook deploy HTTP status: $http_code"
+          echo "Webhook deploy response:"
+          if [ -s webhook-deploy-response.json ]; then
+            cat webhook-deploy-response.json
+          else
+            echo "<empty response body>"
+          fi
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            exit 1
+          fi
