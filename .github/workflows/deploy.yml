@@ -20,6 +20,58 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+
+      - name: Vérifier les secrets requis
+        env:
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAILER_FROM: ${{ secrets.MAILER_FROM }}
+          MAILER_FROM_NAME: ${{ secrets.MAILER_FROM_NAME }}
+          MAILER_ENVELOPE_SENDER: ${{ secrets.MAILER_ENVELOPE_SENDER }}
+          AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
+          SFTP_SERVER: ${{ secrets.SFTP_SERVER }}
+          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+        run: |
+          required_vars=(
+            APP_SECRET
+            DB_HOST
+            DB_NAME
+            DB_USER
+            DB_PASS
+            WEBHOOK_SECRET
+            SITE_URL
+            SMTP_HOST
+            SMTP_USERNAME
+            SMTP_PASSWORD
+            MAILER_FROM
+            MAILER_FROM_NAME
+            MAILER_ENVELOPE_SENDER
+            AUTH_JWT_SECRET
+            SFTP_SERVER
+            SFTP_USERNAME
+            SFTP_PASSWORD
+          )
+
+          missing=()
+          for var_name in "${required_vars[@]}"; do
+            if [ -z "${!var_name}" ]; then
+              missing+=("${var_name}")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "Missing GitHub Actions secrets: ${missing[*]}" >&2
+            exit 1
+          fi
           
       - name: Préparation du fichier .env.local (PROD)
         env:
