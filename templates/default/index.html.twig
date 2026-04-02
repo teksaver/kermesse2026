@@ -1,199 +1,307 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Hébergement PHP & MariaDB</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+{% extends 'base.html.twig' %}
+
+{% block title %}Kermesse 2026{% endblock %}
+
+{% block stylesheets %}
     <style>
         :root {
-            --primary: #4F46E5;
-            --primary-hover: #4338CA;
-            --bg-color: #0F172A;
-            --card-bg: #1E293B;
-            --text-main: #F8FAFC;
-            --text-muted: #94A3B8;
+            --sand: #f7f2e7;
+            --ink: #1f2937;
+            --muted: #6b7280;
+            --teal: #0f766e;
+            --teal-dark: #115e59;
+            --gold: #d97706;
+            --card: rgba(255, 255, 255, 0.85);
+            --border: rgba(31, 41, 55, 0.12);
+            --danger: #b91c1c;
+            --success: #166534;
         }
 
-        * {
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
             margin: 0;
-            padding: 20px;
+            min-height: 100vh;
+            font-family: "Alegreya Sans", "Trebuchet MS", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(217, 119, 6, 0.25), transparent 30%),
+                radial-gradient(circle at top right, rgba(15, 118, 110, 0.2), transparent 30%),
+                linear-gradient(135deg, #fffaf0 0%, #f7f2e7 45%, #eef6f5 100%);
         }
 
-        .container {
-            background-color: var(--card-bg);
-            border-radius: 16px;
-            padding: 40px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            max-width: 650px;
-            width: 100%;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
+        .shell {
+            width: min(1120px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 40px 0 64px;
         }
 
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #3B82F6, #8B5CF6, #EC4899);
+        .hero {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 24px;
+            align-items: stretch;
+        }
+
+        .panel {
+            background: var(--card);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+            padding: 30px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(15, 118, 110, 0.2);
+            color: var(--teal-dark);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            font-size: 0.82rem;
         }
 
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            background: linear-gradient(to right, #60A5FA, #A78BFA);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-family: "Cormorant Garamond", Georgia, serif;
+            font-size: clamp(3rem, 6vw, 4.8rem);
+            line-height: 0.95;
+            margin: 18px 0 16px;
         }
 
-        p {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 30px;
+        .lead {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            color: var(--muted);
+            max-width: 58ch;
         }
 
-        .php-info {
-            background-color: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
+        .status-grid, .auth-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+            margin-top: 24px;
+        }
+
+        .status-card {
+            border-radius: 20px;
             padding: 20px;
-            margin-top: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        
-        .php-info:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--border);
         }
 
-        .php-info h2 {
-            font-size: 1.2rem;
-            margin-top: 0;
-            color: #E2E8F0;
-            font-weight: 500;
+        .status-card strong, .auth-card h2 {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.05rem;
         }
 
-        .version {
-            font-family: monospace;
-            font-size: 1.5rem;
-            margin: 10px 0;
-            font-weight: 700;
-        }
-
-        .status {
+        .pill {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background-color: rgba(16, 185, 129, 0.1);
-            color: #34D399;
-            border-radius: 9999px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
+            gap: 10px;
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-weight: 700;
+            background: rgba(22, 101, 52, 0.12);
+            color: var(--success);
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background-color: #10B981;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #10B981;
-            animation: pulse 2s infinite;
+        .pill.bad {
+            background: rgba(185, 28, 28, 0.12);
+            color: var(--danger);
         }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        .flash-list {
+            display: grid;
+            gap: 12px;
+            margin: 20px 0 0;
+        }
+
+        .flash {
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(31, 41, 55, 0.08);
+            background: rgba(255, 255, 255, 0.92);
+        }
+
+        .flash.success { border-color: rgba(22, 101, 52, 0.2); color: var(--success); }
+        .flash.error { border-color: rgba(185, 28, 28, 0.2); color: var(--danger); }
+
+        .auth-card {
+            border-radius: 24px;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.76);
+            border: 1px solid var(--border);
+        }
+
+        .auth-card p {
+            color: var(--muted);
+            margin-top: 0;
+            line-height: 1.6;
+        }
+
+        label {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        input[type="email"] {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid rgba(31, 41, 55, 0.15);
+            padding: 14px 16px;
+            font: inherit;
+            background: rgba(255, 255, 255, 0.95);
+            margin-bottom: 14px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 999px;
+            padding: 14px 18px;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            background: var(--teal);
+            color: white;
+            width: 100%;
+        }
+
+        button.alt { background: var(--gold); }
+
+        .user-box {
+            display: grid;
+            gap: 14px;
         }
 
         .table-list {
-            margin-top: 15px;
-            background-color: rgba(0,0,0,0.2);
-            border-radius: 6px;
-            padding: 15px;
-            text-align: left;
-        }
-
-        .table-list h3 {
-            margin-top: 0;
-            font-size: 1rem;
-            color: #94A3B8;
-        }
-
-        .table-list ul {
             margin: 0;
-            padding-left: 20px;
-            color: #F8FAFC;
+            padding-left: 18px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .meta {
+            display: grid;
+            gap: 10px;
+            color: var(--muted);
             font-size: 0.95rem;
         }
+
+        @media (max-width: 900px) {
+            .hero, .status-grid, .auth-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .shell {
+                padding-top: 20px;
+            }
+        }
     </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Félicitations !</h1>
-        <p>Déploiement SFTP de Symfony réussi. Le serveur interprète correctement PHP et peut désormais communiquer avec la base de données.</p>
-        
-        <div class="status">
-            <div class="status-dot"></div>
-            Système opérationnel
-        </div>
+{% endblock %}
 
-        <div class="php-info">
-            <h2>Informations Serveur</h2>
-            <div class="version" style="color: #10B981;">
-                PHP {{ constant('PHP_VERSION') }}
-            </div>
-            <p style="margin-bottom: 0; font-size: 0.9rem;">
-                Serveur synchronisé à : {{ "now"|date('H:i:s, d/m/Y') }}
-            </p>
-        </div>
+{% block body %}
+    <div class="shell">
+        <section class="hero">
+            <div class="panel">
+                <span class="eyebrow">Kermesse 2026 • Acces membres</span>
+                <h1>Comptes par lien magique, sans mot de passe.</h1>
+                <p class="lead">
+                    Les visiteurs peuvent creer un compte ou se connecter depuis la page d'accueil.
+                    Chaque connexion passe par un lien unique envoye par e-mail, puis une session JWT est renouvelee automatiquement jusqu'a la deconnexion explicite.
+                </p>
 
-        <!-- Section Base de données -->
-        <div class="php-info" style="margin-top: 20px;">
-            <h2>Connexion MariaDB (Doctrine ORM)</h2>
-            <div class="version" style="color: {{ isConnected ? '#10B981' : (dbStatus == 'Erreur' ? '#EF4444' : '#F59E0B') }};">
-                {{ dbStatus }}
-            </div>
-            
-            <p style="margin-bottom: 0; font-size: 0.9rem; color: #CBD5E1;">
-                {{ dbMessage }}
-            </p>
-            
-            {% if isConnected %}
-                <div class="table-list">
-                    <h3>Tables actives ({{ tables|length }}) :</h3>
-                    {% if tables|length > 0 %}
-                        <ul>
-                            {% for t in tables %}
-                                <li>{{ t }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p style="margin:0; font-size: 0.9rem;"><i>La base de données est complètement vide pour le moment.</i></p>
-                    {% endif %}
+                <div class="status-grid">
+                    <article class="status-card">
+                        <strong>Etat de la base</strong>
+                        <span class="pill {{ isConnected ? '' : 'bad' }}">{{ dbStatus }}</span>
+                        <p>{{ dbMessage }}</p>
+                    </article>
+                    <article class="status-card">
+                        <strong>Serveur</strong>
+                        <p>PHP {{ constant('PHP_VERSION') }}</p>
+                        <p>Derniere verification : {{ "now"|date('d/m/Y H:i:s') }}</p>
+                    </article>
+                    <article class="status-card">
+                        <strong>Tables Doctrine</strong>
+                        {% if tables|length > 0 %}
+                            <ul class="table-list">
+                                {% for t in tables %}
+                                    <li>{{ t }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>La base est encore vide. Les migrations la rempliront des premieres tables applicatives.</p>
+                        {% endif %}
+                    </article>
+                    <article class="status-card">
+                        <strong>Session utilisateur</strong>
+                        {% if app.user %}
+                            <p>Connecte en tant que <strong>{{ app.user.email }}</strong>.</p>
+                            <p>Derniere activite: {{ app.user.lastLoginAt ? app.user.lastLoginAt|date('d/m/Y H:i') : 'premiere connexion' }}</p>
+                        {% else %}
+                            <p>Aucune session active pour le moment.</p>
+                        {% endif %}
+                    </article>
                 </div>
-            {% endif %}
-        </div>
+
+                <div class="flash-list">
+                    {% for label, messages in app.flashes %}
+                        {% for message in messages %}
+                            <div class="flash {{ label }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="panel">
+                {% if app.user %}
+                    <div class="user-box">
+                        <span class="eyebrow">Bienvenue</span>
+                        <h2 style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 2.3rem; margin: 0;">{{ app.user.email }}</h2>
+                        <div class="meta">
+                            <span>Compte verifie : {{ app.user.isVerified ? 'oui' : 'non' }}</span>
+                            <span>Cree le {{ app.user.createdAt|date('d/m/Y H:i') }}</span>
+                            <span>JWT renouvele automatiquement tant que vous gardez la session ouverte.</span>
+                        </div>
+                        <form method="post" action="{{ path('app_auth_logout') }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('logout') }}">
+                            <button type="submit">Se deconnecter</button>
+                        </form>
+                    </div>
+                {% else %}
+                    <div class="auth-grid">
+                        <article class="auth-card">
+                            <h2>Creer un compte</h2>
+                            <p>Un compte est initialise en base, puis un lien unique est envoye par e-mail pour valider l'acces.</p>
+                            <form method="post" action="{{ path('app_auth_register') }}">
+                                <label for="register_email">Adresse e-mail</label>
+                                <input id="register_email" type="email" name="email" autocomplete="email" required>
+                                <input type="hidden" name="_token" value="{{ csrf_token('register') }}">
+                                <button class="alt" type="submit">Recevoir mon lien de creation</button>
+                            </form>
+                        </article>
+
+                        <article class="auth-card">
+                            <h2>Se connecter</h2>
+                            <p>Le lien de connexion est a usage unique. Une fois clique, la session JWT se prolonge automatiquement tant que vous ne vous deconnectez pas.</p>
+                            <form method="post" action="{{ path('app_auth_login') }}">
+                                <label for="login_email">Adresse e-mail</label>
+                                <input id="login_email" type="email" name="email" autocomplete="email" required>
+                                <input type="hidden" name="_token" value="{{ csrf_token('login') }}">
+                                <button type="submit">Recevoir mon lien de connexion</button>
+                            </form>
+                        </article>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
     </div>
-</body>
-</html>
+{% endblock %}

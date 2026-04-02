@@ -27,11 +27,20 @@ jobs:
       - name: Préparation du fichier .env.local (PROD)
         run: |
           echo "APP_ENV='prod'" > .env.local
+          echo "APP_SECRET='${{ secrets.APP_SECRET }}'" >> .env.local
           echo "DB_HOST='${{ secrets.DB_HOST }}'" >> .env.local
           echo "DB_NAME='${{ secrets.DB_NAME }}'" >> .env.local
           echo "DB_USER='${{ secrets.DB_USER }}'" >> .env.local
           echo "DB_PASS='${{ secrets.DB_PASS }}'" >> .env.local
           echo "WEBHOOK_SECRET='${{ secrets.WEBHOOK_SECRET }}'" >> .env.local
+          echo "DEFAULT_URI='https://${{ secrets.SITE_URL }}'" >> .env.local
+          echo "MAILER_DSN='${{ secrets.MAILER_DSN }}'" >> .env.local
+          echo "MAILER_FROM='${{ secrets.MAILER_FROM }}'" >> .env.local
+          echo "AUTH_JWT_SECRET='${{ secrets.AUTH_JWT_SECRET }}'" >> .env.local
+          echo "AUTH_LOGIN_LINK_TTL='900'" >> .env.local
+          echo "AUTH_ACCESS_TOKEN_TTL='900'" >> .env.local
+          echo "AUTH_REFRESH_TOKEN_TTL='2592000'" >> .env.local
+          echo "AUTH_REFRESH_THRESHOLD='300'" >> .env.local
 
       - name: Déploiement des fichiers via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
@@ -48,4 +57,4 @@ jobs:
 
       - name: Exécution des migrations (Webhook)
         run: |
-          curl -X POST "https://${{ secrets.SITE_URL }}/webhook/migrations" -d "secret=${{ secrets.WEBHOOK_SECRET }}"
+          curl --fail --show-error --silent -X POST "https://${{ secrets.SITE_URL }}/webhook/migrations" -d "secret=${{ secrets.WEBHOOK_SECRET }}"

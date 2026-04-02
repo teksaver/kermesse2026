@@ -13,7 +13,6 @@ class DefaultController extends AbstractController
     public function index(Connection $connection): Response
     {
         try {
-            // Implicit connection triggers on first use.
             $dbStatus = 'Connecté';
             $dbMessage = 'Connexion à la base de données réussie via Doctrine.';
             $isConnected = true;
@@ -32,6 +31,7 @@ class DefaultController extends AbstractController
             'dbMessage' => $dbMessage,
             'isConnected' => $isConnected,
             'tables' => $tables,
+            'user' => $this->getUser(),
         ]);
     }
 }

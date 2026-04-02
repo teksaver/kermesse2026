@@ -35,6 +35,20 @@ Pour des raisons de sécurité évidentes, vous ne devez **jamais** inscrire vos
 - **Nom**: `DB_PASS`
   - *Valeur*: Le mot de passe associé à la base de données 
 
+### Les secrets applicatifs supplementaires :
+- **Nom**: `APP_SECRET`
+  - *Valeur*: Une chaine aleatoire longue pour Symfony
+- **Nom**: `AUTH_JWT_SECRET`
+  - *Valeur*: Une seconde chaine aleatoire longue dediee a la signature des JWT
+- **Nom**: `MAILER_DSN`
+  - *Valeur*: Le DSN de votre transport e-mail SMTP
+- **Nom**: `MAILER_FROM`
+  - *Valeur*: L'adresse expediteur utilisee pour les liens de connexion
+- **Nom**: `SITE_URL`
+  - *Valeur*: Votre nom de domaine public, sans `https://`
+- **Nom**: `WEBHOOK_SECRET`
+  - *Valeur*: Un secret partage pour declencher la migration distante en securite
+
 ## 3. Le dossier distant et le port
 Le fichier `.github/workflows/deploy.yml` a été pré-configuré avec vos paramètres spécifiques. Vous n'avez donc, à priori, plus rien à y modifier. 
 
@@ -46,4 +60,14 @@ Notez que ces options spécifiques à votre hébergement y ont été expliciteme
 Une fois les configurations faites et le dernier `push` de `deploy.yml` réalisé vers votre branche `main` :
 1. Allez dans l'onglet **Actions** de votre dépôt GitHub.
 2. Vous verrez l'exécution de "Deploy via SFTP".
-3. Cliquez dessus pour voir la progression : si tout est vert, les fichiers ont été copiés de succès vers votre hébergement ! Allez visiter l'adresse de votre site web pour découvrir l'interface `index.php`.
+3. Cliquez dessus pour voir la progression : si tout est vert, les fichiers ont ete copies puis la route `/webhook/migrations` a execute `doctrine:migrations:migrate` sur l'hebergement.
+
+## 5. Pourquoi les migrations passent par GitHub Actions ?
+Ouvaton n'expose pas de GUI pour lancer des commandes Doctrine apres le transfert SFTP. Le workflow de deploiement contourne proprement cette limitation :
+
+1. GitHub Actions prepare `.env.local` avec les secrets de production.
+2. Les fichiers sont envoyes par SFTP dans `httpdocs`.
+3. GitHub appelle ensuite le webhook Symfony protege par `WEBHOOK_SECRET`.
+4. Ce webhook execute `doctrine:migrations:migrate --no-interaction --allow-no-migration` directement sur le serveur.
+
+Ainsi, les migrations restent versionnees dans Git, rejouables, et ne dependent d'aucune intervention manuelle dans l'hebergeur.
