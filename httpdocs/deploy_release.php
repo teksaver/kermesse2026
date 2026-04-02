@@ -40,6 +40,26 @@ if ('' === $expectedSecret || !hash_equals($expectedSecret, (string) $suppliedSe
     return;
 }
 
+if (isset($_GET['action']) && 'logs' === $_GET['action']) {
+    header('Content-Type: text/plain');
+    $logFile = $projectRoot.'/var/log/prod.log';
+    if (!is_file($logFile)) {
+        echo "Log file not found.";
+        return;
+    }
+
+    $fileSize = filesize($logFile);
+    if ($fileSize > 2 * 1024 * 1024) { // Read only last 2MB if huge
+        $fp = fopen($logFile, 'r');
+        fseek($fp, -2 * 1024 * 1024, SEEK_END);
+        echo fread($fp, 2 * 1024 * 1024);
+        fclose($fp);
+    } else {
+        echo file_get_contents($logFile);
+    }
+    return;
+}
+
 if (!class_exists(ZipArchive::class)) {
     http_response_code(500);
     echo json_encode([
