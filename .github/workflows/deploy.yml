@@ -185,6 +185,18 @@ jobs:
 
       - name: Recharger le cache applicatif
         run: |
+          probe_http_code=$(curl --show-error --silent --output webhook-probe-response.json --write-out "%{http_code}" -X POST "https://${{ vars.SITE_URL }}/deploy_probe.php" -d "secret=${{ secrets.WEBHOOK_SECRET }}")
+          echo "Deploy probe HTTP status: $probe_http_code"
+          echo "Deploy probe response:"
+          if [ -s webhook-probe-response.json ]; then
+            cat webhook-probe-response.json
+          else
+            echo "<empty response body>"
+          fi
+          if [ "$probe_http_code" -lt 200 ] || [ "$probe_http_code" -ge 300 ]; then
+            exit 1
+          fi
+
           http_code=$(curl --show-error --silent --output webhook-bootstrap-response.json --write-out "%{http_code}" -X POST "https://${{ vars.SITE_URL }}/index.php/webhook/migrations" -d "secret=${{ secrets.WEBHOOK_SECRET }}")
           echo "Webhook bootstrap HTTP status: $http_code"
           echo "Webhook bootstrap response:"
