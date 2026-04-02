@@ -117,7 +117,7 @@ Il ne faut donc pas deployer tout le projet directement dans `/httpdocs`, sinon 
 Une fois les configurations faites et le dernier `push` de `deploy.yml` réalisé vers votre branche `main` :
 1. Allez dans l'onglet **Actions** de votre dépôt GitHub.
 2. Vous verrez l'exécution de "Deploy via SFTP".
-3. Cliquez dessus pour voir la progression : le workflow commence par envoyer un petit bootstrap applicatif, recharge le cache Symfony via `/index.php/webhook/migrations`, puis envoie `deploy-package.zip` et appelle `/index.php/webhook/deploy` pour decompresser l'archive et executer les migrations.
+3. Cliquez dessus pour voir la progression : le workflow commence par envoyer un petit bootstrap applicatif, verifie l'environnement via `/deploy_probe.php`, puis envoie `deploy-package.zip` et appelle `/deploy_release.php` pour decompresser l'archive et executer les commandes de maintenance.
 
 ## 5. Pourquoi les migrations passent par GitHub Actions ?
 Ouvaton n'expose pas de GUI pour lancer des commandes Doctrine apres le transfert SFTP. Le workflow de deploiement contourne proprement cette limitation :
@@ -125,21 +125,21 @@ Ouvaton n'expose pas de GUI pour lancer des commandes Doctrine apres le transfer
 1. GitHub Actions prepare `.env.local` avec les secrets de production.
 2. GitHub construit un bundle de deploiement et un bootstrap applicatif leger.
 3. Le bootstrap est envoye une premiere fois par SFTP pour mettre a jour les routes et les webhooks.
-4. GitHub appelle `/index.php/webhook/migrations`, qui vide et rechauffe le cache Symfony puis lance les migrations.
+4. GitHub verifie l'etat du serveur avec `/deploy_probe.php`.
 5. GitHub construit ensuite l'archive `deploy-package.zip` et l'envoie par SFTP.
-6. GitHub appelle `/index.php/webhook/deploy`.
-7. Le webhook decompresse l'archive directement sur le serveur puis execute les migrations.
+6. GitHub appelle `/deploy_release.php`.
+7. Ce script decompresse l'archive directement sur le serveur, puis lance `cache:clear`, `cache:warmup` et `doctrine:migrations:migrate`.
 
 Ainsi, les migrations restent versionnees dans Git, rejouables, et ne dependent d'aucune intervention manuelle dans l'hebergeur.
 
 ## 5.bis Premiere mise en place du deploiement zip
 Le workflow gere maintenant automatiquement la premiere mise en place :
 
-- il pousse d'abord un bootstrap leger pour rendre les nouveaux webhooks disponibles
-- il recharge ensuite le cache Symfony
+- il pousse d'abord un bootstrap leger pour rendre les scripts de deploiement disponibles
+- il verifie ensuite l'environnement reel du serveur
 - puis il bascule sur le mode zip
 
-Le passage par `index.php` est volontaire : il permet de ne pas dependre de la reecriture d'URL du serveur web, ce qui rend le deploiement plus fiable sur un hebergement mutualise comme Ouvaton.
+Le passage par des scripts PHP publics dedies est volontaire : il permet de ne pas dependre du boot complet de Symfony avant que `vendor/` ne soit en place, ce qui rend le premier deploiement bien plus fiable sur un hebergement mutualise comme Ouvaton.
 
 Vous n'avez donc pas besoin d'un deploiement manuel intermediaire.
 

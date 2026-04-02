@@ -197,18 +197,6 @@ jobs:
             exit 1
           fi
 
-          http_code=$(curl --show-error --silent --output webhook-bootstrap-response.json --write-out "%{http_code}" -X POST "https://${{ vars.SITE_URL }}/index.php/webhook/migrations" -d "secret=${{ secrets.WEBHOOK_SECRET }}")
-          echo "Webhook bootstrap HTTP status: $http_code"
-          echo "Webhook bootstrap response:"
-          if [ -s webhook-bootstrap-response.json ]; then
-            cat webhook-bootstrap-response.json
-          else
-            echo "<empty response body>"
-          fi
-          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-            exit 1
-          fi
-
       - name: Déploiement des fichiers via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
@@ -221,11 +209,11 @@ jobs:
           sftp_only: true # Force l'utilisation pure du protocole SFTP sans commandes SSH
           args: '-o ConnectTimeout=5'
 
-      - name: Déploiement et migrations (Webhook)
+      - name: Déploiement et migrations (Release)
         run: |
-          http_code=$(curl --show-error --silent --output webhook-deploy-response.json --write-out "%{http_code}" -X POST "https://${{ vars.SITE_URL }}/index.php/webhook/deploy" -d "secret=${{ secrets.WEBHOOK_SECRET }}")
-          echo "Webhook deploy HTTP status: $http_code"
-          echo "Webhook deploy response:"
+          http_code=$(curl --show-error --silent --output webhook-deploy-response.json --write-out "%{http_code}" -X POST "https://${{ vars.SITE_URL }}/deploy_release.php" -d "secret=${{ secrets.WEBHOOK_SECRET }}")
+          echo "Release HTTP status: $http_code"
+          echo "Release response:"
           if [ -s webhook-deploy-response.json ]; then
             cat webhook-deploy-response.json
           else
