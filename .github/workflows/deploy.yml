@@ -75,30 +75,49 @@ jobs:
           
       - name: Préparation du fichier .env.local (PROD)
         env:
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          SITE_URL: ${{ vars.SITE_URL }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAILER_FROM: ${{ vars.MAILER_FROM }}
+          MAILER_FROM_NAME: ${{ vars.MAILER_FROM_NAME }}
+          MAILER_ENVELOPE_SENDER: ${{ vars.MAILER_ENVELOPE_SENDER }}
+          AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
         run: |
+          write_env() {
+            key="$1"
+            value="$2"
+            escaped=$(printf "%s" "$value" | sed "s/'/'\"'\"'/g")
+            printf "%s='%s'\n" "$key" "$escaped" >> .env.local
+          }
+
           SMTP_USER_ENCODED="$(php -r 'echo rawurlencode((string) getenv("SMTP_USERNAME"));')"
           SMTP_PASS_ENCODED="$(php -r 'echo rawurlencode((string) getenv("SMTP_PASSWORD"));')"
 
-          echo "APP_ENV='prod'" > .env.local
-          echo "APP_SECRET='${{ secrets.APP_SECRET }}'" >> .env.local
-          echo "DB_HOST='${{ secrets.DB_HOST }}'" >> .env.local
-          echo "DB_NAME='${{ secrets.DB_NAME }}'" >> .env.local
-          echo "DB_USER='${{ secrets.DB_USER }}'" >> .env.local
-          echo "DB_PASS='${{ secrets.DB_PASS }}'" >> .env.local
-          echo "WEBHOOK_SECRET='${{ secrets.WEBHOOK_SECRET }}'" >> .env.local
-          echo "DEFAULT_URI='https://${{ vars.SITE_URL }}'" >> .env.local
-          echo "MAILER_DSN='smtp://${SMTP_USER_ENCODED}:${SMTP_PASS_ENCODED}@${SMTP_HOST}:587?encryption=tls'" >> .env.local
-          echo "MAILER_FROM='${{ vars.MAILER_FROM }}'" >> .env.local
-          echo "MAILER_FROM_NAME='${{ vars.MAILER_FROM_NAME }}'" >> .env.local
-          echo "MAILER_ENVELOPE_SENDER='${{ vars.MAILER_ENVELOPE_SENDER }}'" >> .env.local
-          echo "AUTH_JWT_SECRET='${{ secrets.AUTH_JWT_SECRET }}'" >> .env.local
-          echo "AUTH_LOGIN_LINK_TTL='900'" >> .env.local
-          echo "AUTH_ACCESS_TOKEN_TTL='900'" >> .env.local
-          echo "AUTH_REFRESH_TOKEN_TTL='2592000'" >> .env.local
-          echo "AUTH_REFRESH_THRESHOLD='300'" >> .env.local
+          : > .env.local
+          write_env APP_ENV "prod"
+          write_env APP_SECRET "$APP_SECRET"
+          write_env DB_HOST "$DB_HOST"
+          write_env DB_NAME "$DB_NAME"
+          write_env DB_USER "$DB_USER"
+          write_env DB_PASS "$DB_PASS"
+          write_env WEBHOOK_SECRET "$WEBHOOK_SECRET"
+          write_env DEFAULT_URI "https://$SITE_URL"
+          write_env MAILER_DSN "smtp://${SMTP_USER_ENCODED}:${SMTP_PASS_ENCODED}@${SMTP_HOST}:587?encryption=tls"
+          write_env MAILER_FROM "$MAILER_FROM"
+          write_env MAILER_FROM_NAME "$MAILER_FROM_NAME"
+          write_env MAILER_ENVELOPE_SENDER "$MAILER_ENVELOPE_SENDER"
+          write_env AUTH_JWT_SECRET "$AUTH_JWT_SECRET"
+          write_env AUTH_LOGIN_LINK_TTL "900"
+          write_env AUTH_ACCESS_TOKEN_TTL "900"
+          write_env AUTH_REFRESH_TOKEN_TTL "2592000"
+          write_env AUTH_REFRESH_THRESHOLD "300"
 
       - name: Install vendor dependencies
         env:
