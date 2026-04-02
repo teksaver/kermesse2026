@@ -1,0 +1,29 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - database
+
+  database:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: "!ChangeMe!"
+      MARIADB_DATABASE: app
+      MARIADB_USER: app
+      MARIADB_PASSWORD: "!ChangeMe!"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - database_data:/var/lib/mysql
+
+volumes:
+  database_data:

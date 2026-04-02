@@ -16,12 +16,22 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v4
 
-      - name: Préparation du fichier .env
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          
+      - name: Install vendor dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Préparation du fichier .env.local (PROD)
         run: |
-          echo "DB_HOST='${{ secrets.DB_HOST }}'" > .env
-          echo "DB_NAME='${{ secrets.DB_NAME }}'" >> .env
-          echo "DB_USER='${{ secrets.DB_USER }}'" >> .env
-          echo "DB_PASS='${{ secrets.DB_PASS }}'" >> .env
+          echo "APP_ENV='prod'" > .env.local
+          echo "DB_HOST='${{ secrets.DB_HOST }}'" >> .env.local
+          echo "DB_NAME='${{ secrets.DB_NAME }}'" >> .env.local
+          echo "DB_USER='${{ secrets.DB_USER }}'" >> .env.local
+          echo "DB_PASS='${{ secrets.DB_PASS }}'" >> .env.local
+          echo "WEBHOOK_SECRET='${{ secrets.WEBHOOK_SECRET }}'" >> .env.local
 
       - name: Déploiement des fichiers via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
@@ -32,6 +42,10 @@ jobs:
           password: ${{ secrets.SFTP_PASSWORD }}
           # Utiliser './' pour inclure absolument les fichiers cachés comme .env !
           local_path: './'
-          remote_path: '/httpdocs' # Dossier racine ciblé sur le serveur
+          remote_path: '/' # Déploiement à la racine de l'hébergement
           sftp_only: true # Force l'utilisation pure du protocole SFTP sans commandes SSH
           args: '-o ConnectTimeout=5'
+
+      - name: Exécution des migrations (Webhook)
+        run: |
+          curl -X POST "https://${{ secrets.SITE_URL }}/webhook/migrations" -d "secret=${{ secrets.WEBHOOK_SECRET }}"
