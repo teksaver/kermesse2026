@@ -2,16 +2,14 @@
 
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Console\Application;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 class WebhookController extends AbstractController
 {
@@ -155,24 +153,32 @@ class WebhookController extends AbstractController
      */
     private function runConsoleCommand(KernelInterface $kernel, array $inputArguments): array
     {
-        $application = new Application($kernel);
-        $application->setAutoExit(false);
-        $input = new ArrayInput($inputArguments);
+        $command = [PHP_BINARY, $kernel->getProjectDir().'/bin/console'];
+        foreach ($inputArguments as $name => $value) {
+            $command[] = $name;
+            if (true !== $value) {
+                $command[] = (string) $value;
+            }
+        }
 
-        $output = new BufferedOutput();
+        $process = new Process($command, $kernel->getProjectDir(), [
+            'APP_ENV' => 'prod',
+            'APP_DEBUG' => '0',
+        ]);
+        $process->setTimeout(300);
 
         try {
-            $exitCode = $application->run($input, $output);
-        } catch (\Exception $e) {
+            $process->mustRun();
+        } catch (\Throwable $e) {
             return [
-                'exitCode' => 1,
-                'output' => $e->getMessage()."\n".$output->fetch(),
+                'exitCode' => $process->getExitCode() ?? 1,
+                'output' => trim($process->getOutput()."\n".$process->getErrorOutput()."\n".$e->getMessage()),
             ];
         }
 
         return [
-            'exitCode' => $exitCode,
-            'output' => $output->fetch(),
+            'exitCode' => $process->getExitCode() ?? 0,
+            'output' => trim($process->getOutput()."\n".$process->getErrorOutput()),
         ];
     }
 
