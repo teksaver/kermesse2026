@@ -136,6 +136,11 @@ function runConsoleCommand(string $projectRoot, array $inputArguments): array
     static $bootstrapped = false;
     if (!$bootstrapped) {
         require_once $projectRoot.'/vendor/autoload.php';
+
+        if (class_exists(\Symfony\Component\Dotenv\Dotenv::class)) {
+            (new \Symfony\Component\Dotenv\Dotenv())->bootEnv($projectRoot.'/.env');
+        }
+
         $bootstrapped = true;
     }
 
