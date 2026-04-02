@@ -107,7 +107,7 @@ jobs:
           server: ${{ secrets.SFTP_SERVER }}
           port: 115
           password: ${{ secrets.SFTP_PASSWORD }}
-          local_path: './bootstrap/'
+          local_path: './bootstrap/.'
           remote_path: '/'
           sftp_only: true
           args: '-o ConnectTimeout=5'
