@@ -185,7 +185,9 @@ jobs:
 
       - name: Recharger le cache applicatif
         run: |
-          curl --fail --show-error --silent -X POST "https://${{ vars.SITE_URL }}/index.php/webhook/migrations" -d "secret=${{ secrets.WEBHOOK_SECRET }}"
+          http_code=$(curl --show-error --silent --output webhook-bootstrap-response.json --write-out "%{http_code}" -X POST "https://${{ vars.SITE_URL }}/index.php/webhook/migrations" -d "secret=${{ secrets.WEBHOOK_SECRET }}")
+          cat webhook-bootstrap-response.json
+          test "$http_code" -ge 200 -a "$http_code" -lt 300
 
       - name: Déploiement des fichiers via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
@@ -201,4 +203,6 @@ jobs:
 
       - name: Déploiement et migrations (Webhook)
         run: |
-          curl --fail --show-error --silent -X POST "https://${{ vars.SITE_URL }}/index.php/webhook/deploy" -d "secret=${{ secrets.WEBHOOK_SECRET }}"
+          http_code=$(curl --show-error --silent --output webhook-deploy-response.json --write-out "%{http_code}" -X POST "https://${{ vars.SITE_URL }}/index.php/webhook/deploy" -d "secret=${{ secrets.WEBHOOK_SECRET }}")
+          cat webhook-deploy-response.json
+          test "$http_code" -ge 200 -a "$http_code" -lt 300
