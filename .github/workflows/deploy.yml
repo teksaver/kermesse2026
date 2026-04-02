@@ -21,9 +21,6 @@ jobs:
         with:
           php-version: '8.4'
           
-      - name: Install vendor dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
-
       - name: Préparation du fichier .env.local (PROD)
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
@@ -50,6 +47,12 @@ jobs:
           echo "AUTH_ACCESS_TOKEN_TTL='900'" >> .env.local
           echo "AUTH_REFRESH_TOKEN_TTL='2592000'" >> .env.local
           echo "AUTH_REFRESH_THRESHOLD='300'" >> .env.local
+
+      - name: Install vendor dependencies
+        env:
+          APP_ENV: prod
+          APP_DEBUG: 0
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
       - name: Déploiement des fichiers via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
