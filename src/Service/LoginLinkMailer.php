@@ -15,6 +15,7 @@ class LoginLinkMailer
         private readonly MailerInterface $mailer,
         private readonly UrlGeneratorInterface $urlGenerator,
         #[Autowire('%env(MAILER_FROM)%')] private readonly string $fromAddress,
+        #[Autowire('%env(MAILER_FROM_NAME)%')] private readonly string $fromName,
     ) {
     }
 
@@ -31,7 +32,7 @@ class LoginLinkMailer
         ], UrlGeneratorInterface::ABSOLUTE_URL);
 
         $email = (new TemplatedEmail())
-            ->from(new Address($this->fromAddress, 'Kermesse 2026'))
+            ->from(new Address($this->fromAddress, $this->fromName))
             ->to($user->getEmail())
             ->subject('Votre lien de connexion Kermesse 2026')
             ->htmlTemplate('emails/login_link.html.twig')

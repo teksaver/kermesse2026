@@ -25,7 +25,14 @@ jobs:
         run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
       - name: Préparation du fichier .env.local (PROD)
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
+          SMTP_USER_ENCODED="$(php -r 'echo rawurlencode((string) getenv("SMTP_USERNAME"));')"
+          SMTP_PASS_ENCODED="$(php -r 'echo rawurlencode((string) getenv("SMTP_PASSWORD"));')"
+
           echo "APP_ENV='prod'" > .env.local
           echo "APP_SECRET='${{ secrets.APP_SECRET }}'" >> .env.local
           echo "DB_HOST='${{ secrets.DB_HOST }}'" >> .env.local
@@ -34,8 +41,10 @@ jobs:
           echo "DB_PASS='${{ secrets.DB_PASS }}'" >> .env.local
           echo "WEBHOOK_SECRET='${{ secrets.WEBHOOK_SECRET }}'" >> .env.local
           echo "DEFAULT_URI='https://${{ secrets.SITE_URL }}'" >> .env.local
-          echo "MAILER_DSN='${{ secrets.MAILER_DSN }}'" >> .env.local
+          echo "MAILER_DSN='smtp://${SMTP_USER_ENCODED}:${SMTP_PASS_ENCODED}@${SMTP_HOST}:587?encryption=tls'" >> .env.local
           echo "MAILER_FROM='${{ secrets.MAILER_FROM }}'" >> .env.local
+          echo "MAILER_FROM_NAME='${{ secrets.MAILER_FROM_NAME }}'" >> .env.local
+          echo "MAILER_ENVELOPE_SENDER='${{ secrets.MAILER_ENVELOPE_SENDER }}'" >> .env.local
           echo "AUTH_JWT_SECRET='${{ secrets.AUTH_JWT_SECRET }}'" >> .env.local
           echo "AUTH_LOGIN_LINK_TTL='900'" >> .env.local
           echo "AUTH_ACCESS_TOKEN_TTL='900'" >> .env.local
