@@ -8,13 +8,20 @@ Vous aurez besoin des informations fournies par votre hébergeur (généralement
 - **Votre identifiant** (Nom d'utilisateur).
 - **Votre mot de passe SFTP** pour vous connecter au serveur.
 
-## 2. Ajouter vos secrets sur GitHub
-Pour des raisons de sécurité évidentes, vous ne devez **jamais** inscrire vos identifiants en clair dans les fichiers (`deploy.yml`). Pour cela, nous utilisons les "Secrets GitHub" :
+## 2. Ajouter les secrets et variables sur GitHub
+Le workflow utilise maintenant deux types de configuration GitHub :
+
+- les **Secrets GitHub Actions** pour les valeurs sensibles
+- les **Repository Variables** pour les valeurs non sensibles
+
+Pour les configurer :
 
 1. Allez sur la page principale de votre dépôt sur le site GitHub.
 2. Cliquez sur l'onglet **Settings** ⚙️ (Paramètres).
 3. Dans la barre latérale de gauche, descendez dans la section "Security" et ouvrez **Secrets and variables**, puis cliquez sur **Actions**.
-4. Cliquez sur le bouton vert **New repository secret** pour ajouter vos différents secrets (le nom doit être rigoureusement exact) :
+4. Utilisez **Secrets** pour les valeurs sensibles et **Variables** pour les autres.
+
+### Les secrets GitHub Actions :
 
 ### Les 3 secrets pour le déploiement SFTP :
 - **Nom**: `SFTP_SERVER`
@@ -40,16 +47,22 @@ Pour des raisons de sécurité évidentes, vous ne devez **jamais** inscrire vos
   - *Valeur*: Une chaine aleatoire longue pour Symfony
 - **Nom**: `AUTH_JWT_SECRET`
   - *Valeur*: Une seconde chaine aleatoire longue dediee a la signature des JWT
-- **Nom**: `MAILER_FROM`
-  - *Valeur*: L'adresse expediteur visible par les destinataires, par exemple `no-reply@votredomaine.fr`
-- **Nom**: `MAILER_FROM_NAME`
-  - *Valeur*: Le nom visible de l'expediteur, par exemple `Kermesse 2026`
-- **Nom**: `MAILER_ENVELOPE_SENDER`
-  - *Valeur*: L'adresse de retour technique utilisee par SMTP pour les rebonds, par exemple `bounces@votredomaine.fr`
-- **Nom**: `SITE_URL`
-  - *Valeur*: Votre nom de domaine public, sans `https://`
 - **Nom**: `WEBHOOK_SECRET`
   - *Valeur*: Un secret partage pour declencher la migration distante en securite
+
+### Les repository variables GitHub :
+- **Nom**: `SITE_URL`
+  - *Valeur attendue*: uniquement le nom de domaine public, sans `http://` ni `https://`
+  - *Exemple*: `kermesse2026.fr`
+- **Nom**: `MAILER_FROM`
+  - *Valeur attendue*: l'adresse expediteur visible par les destinataires
+  - *Exemple*: `no-reply@kermesse2026.fr`
+- **Nom**: `MAILER_FROM_NAME`
+  - *Valeur attendue*: le nom visible de l'expediteur
+  - *Exemple*: `Kermesse 2026`
+- **Nom**: `MAILER_ENVELOPE_SENDER`
+  - *Valeur attendue*: l'adresse technique de retour SMTP pour les rebonds
+  - *Exemple*: `bounces@kermesse2026.fr`
 
 ### Difference entre `MAILER_FROM` et `MAILER_ENVELOPE_SENDER`
 - `MAILER_FROM` correspond a l'adresse visible dans le champ "De:" du message. C'est celle que l'utilisateur voit dans sa boite mail.
@@ -59,6 +72,21 @@ Pour des raisons de sécurité évidentes, vous ne devez **jamais** inscrire vos
 - Une configuration propre et classique est par exemple :
   - `MAILER_FROM=no-reply@votredomaine.fr`
   - `MAILER_ENVELOPE_SENDER=bounces@votredomaine.fr`
+
+### Valeurs attendues en pratique
+- `APP_SECRET`
+  - chaine aleatoire longue pour Symfony
+  - exemple : `4mYx7pQ2nL9sV3kT8rH1cD6fB0wZ5jUa`
+- `AUTH_JWT_SECRET`
+  - chaine aleatoire longue distincte de `APP_SECRET`
+  - exemple : `8dR4vN1qT7mK2xP9sC5hL3zF6bW0yJae`
+- `WEBHOOK_SECRET`
+  - chaine aleatoire longue choisie par vous
+  - exemple : `7x3VnP2qL9sK4mT8wZ1rH6cY5uB0eF3j`
+- `SITE_URL`
+  - seulement le domaine
+  - exemple correct : `kermesse2026.fr`
+  - exemple incorrect : `https://kermesse2026.fr`
 
 ### Les secrets SMTP Ouvaton :
 - **Nom**: `SMTP_HOST`
