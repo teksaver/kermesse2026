@@ -103,9 +103,15 @@ Le fichier `.github/workflows/deploy.yml` a été pré-configuré avec vos param
 
 Notez que ces options spécifiques à votre hébergement y ont été explicitement intégrées :
 - Le **port SFTP 115** (`port: 115`) car il diffère du port standard (22).
-- Le **dossier cible `/httpdocs`** (`remote_path: '/httpdocs'`) qui correspond à la racine web réellement servie par votre hébergement.
+- Le **dossier de déploiement SFTP `/`** (`remote_path: '/'`) qui correspond a la racine du projet.
+- Le **dossier web public `/httpdocs`** reste la racine servie par l'hebergement.
 
-Le point important est que le workflow ne deploie pas a la racine SFTP `/`, mais bien dans `/httpdocs`. Si les fichiers sont envoyes ailleurs, le site public continuera a executer l'ancienne version du code.
+Le point important est le suivant :
+- le projet Symfony complet est deploie a la racine SFTP `/`
+- le fichier public reste `httpdocs/index.php`
+- ce fichier charge le projet depuis son dossier parent
+
+Il ne faut donc pas deployer tout le projet directement dans `/httpdocs`, sinon `index.php` ne retrouvera plus correctement `vendor/`, `config/` et le reste du projet.
 
 ## 4. Testez !
 Une fois les configurations faites et le dernier `push` de `deploy.yml` réalisé vers votre branche `main` :

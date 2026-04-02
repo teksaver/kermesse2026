@@ -179,7 +179,7 @@ jobs:
           port: 115
           password: ${{ secrets.SFTP_PASSWORD }}
           local_path: './bootstrap/.'
-          remote_path: '/httpdocs'
+          remote_path: '/'
           sftp_only: true
           args: '-o ConnectTimeout=5'
 
@@ -205,7 +205,7 @@ jobs:
           port: 115 # Port personnalisé pour le SFTP
           password: ${{ secrets.SFTP_PASSWORD }}
           local_path: './deploy-package.zip'
-          remote_path: '/httpdocs' # Déploiement dans la racine web de l'hébergement
+          remote_path: '/' # Déploiement à la racine du projet ; le web root public reste /httpdocs
           sftp_only: true # Force l'utilisation pure du protocole SFTP sans commandes SSH
           args: '-o ConnectTimeout=5'
 
