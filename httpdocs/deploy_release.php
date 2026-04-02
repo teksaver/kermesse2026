@@ -85,9 +85,20 @@ try {
 
     $results = [];
     $commands = [
-        'cache:clear' => ['cache:clear', '--env=prod', '--no-warmup'],
-        'cache:warmup' => ['cache:warmup', '--env=prod'],
-        'doctrine:migrations:migrate' => ['doctrine:migrations:migrate', '--no-interaction', '--allow-no-migration'],
+        'cache:clear' => [
+            'command' => 'cache:clear',
+            '--env' => 'prod',
+            '--no-warmup' => true,
+        ],
+        'cache:warmup' => [
+            'command' => 'cache:warmup',
+            '--env' => 'prod',
+        ],
+        'doctrine:migrations:migrate' => [
+            'command' => 'doctrine:migrations:migrate',
+            '--no-interaction' => true,
+            '--allow-no-migration' => true,
+        ],
     ];
 
     foreach ($commands as $label => $arguments) {
@@ -120,35 +131,43 @@ try {
     ], JSON_PRETTY_PRINT);
 }
 
-function runConsoleCommand(string $projectRoot, array $arguments): array
+function runConsoleCommand(string $projectRoot, array $inputArguments): array
 {
-    $command = array_merge([PHP_BINARY, $projectRoot.'/bin/console'], $arguments);
-    $descriptorSpec = [
-        1 => ['pipe', 'w'],
-        2 => ['pipe', 'w'],
-    ];
+    static $bootstrapped = false;
+    if (!$bootstrapped) {
+        require_once $projectRoot.'/vendor/autoload.php';
+        $bootstrapped = true;
+    }
 
-    $process = proc_open($command, $descriptorSpec, $pipes, $projectRoot, [
-        'APP_ENV' => 'prod',
-        'APP_DEBUG' => '0',
-    ]);
-
-    if (!is_resource($process)) {
+    if (!class_exists(\App\Kernel::class)) {
         return [
             'exitCode' => 1,
-            'output' => 'Unable to start console process.',
+            'output' => 'App\\Kernel class not found after autoload.',
         ];
     }
 
-    $stdout = stream_get_contents($pipes[1]) ?: '';
-    fclose($pipes[1]);
-    $stderr = stream_get_contents($pipes[2]) ?: '';
-    fclose($pipes[2]);
-    $exitCode = proc_close($process);
+    $kernel = new \App\Kernel('prod', false);
+    $application = new \Symfony\Bundle\FrameworkBundle\Console\Application($kernel);
+    $application->setAutoExit(false);
+    $input = new \Symfony\Component\Console\Input\ArrayInput($inputArguments);
+    $output = new \Symfony\Component\Console\Output\BufferedOutput();
+
+    try {
+        $exitCode = $application->run($input, $output);
+    } catch (Throwable $e) {
+        $kernel->shutdown();
+
+        return [
+            'exitCode' => 1,
+            'output' => trim($output->fetch()."\n".$e->getMessage()),
+        ];
+    }
+
+    $kernel->shutdown();
 
     return [
         'exitCode' => $exitCode,
-        'output' => trim($stdout."\n".$stderr),
+        'output' => trim($output->fetch()),
     ];
 }
 
