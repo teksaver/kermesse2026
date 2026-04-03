@@ -6,6 +6,8 @@ use App\Entity\User;
 use App\Entity\UserSession;
 use App\Repository\LoginTokenRepository;
 use App\Repository\UserRepository;
+use App\Security\AuthCookieManager;
+use App\Security\JwtTokenManager;
 use App\Service\LoginLinkManager;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -173,6 +175,8 @@ class AuthController extends AbstractController
         LoginTokenRepository $loginTokenRepository,
         EntityManagerInterface $entityManager,
         Request $request,
+        JwtTokenManager $jwtTokenManager,
+        AuthCookieManager $authCookieManager,
     ): RedirectResponse {
         $now = new \DateTimeImmutable();
         $loginToken = $loginTokenRepository->findUsableBySelector($selector, $now);
@@ -201,13 +205,17 @@ class AuthController extends AbstractController
             ->setSessionId($this->generateSessionId());
 
         $entityManager->persist($session);
+        $tokenPair = $jwtTokenManager->issueTokenPair($session);
+        $entityManager->flush();
 
-        $request->attributes->set('auth.session', $session);
-        $request->attributes->set('auth.issue_tokens_for_session', $session);
-        $request->attributes->set('auth.clear_cookies', false);
         $this->addFlash('success', 'Connexion reussie. Votre session restera active jusqu a votre deconnexion.');
 
-        return $this->redirectToRoute('app_homepage');
+        $response = $this->redirectToRoute('app_homepage');
+        foreach ($authCookieManager->createCookies($request, $tokenPair) as $cookie) {
+            $response->headers->setCookie($cookie);
+        }
+
+        return $response;
     }
 
     #[Route('/index.php/auth/logout', name: 'app_auth_logout', methods: ['POST'])]
