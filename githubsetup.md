@@ -156,3 +156,12 @@ Le workflow peut injecter correctement les identifiants SMTP, mais la delivrabil
 Le DKIM ne se configure pas dans `deploy.yml` ni dans Symfony : il doit etre publie dans le DNS du domaine avec les valeurs remises par Ouvaton. Sans SPF/DKIM/DMARC alignes, meme un SMTP valide risque d'etre classe en spam.
 
 Le choix retenu ici est le port `587` avec `STARTTLS`, qui est en general le plus simple et le plus interoperable pour un envoi applicatif moderne.
+
+## 7. Remplacer un secret fuité (Rotation des clés)
+Si vous soupçonnez qu'un secret a fuité (comme le `WEBHOOK_SECRET`, le `DB_PASS`, ou l'`APP_SECRET`), inutile d'intervenir manuellement sur votre hébergement. Le processus de déploiement gère automatiquement la rotation des clés :
+
+1. Allez sur GitHub, dans **Settings > Secrets and variables > Actions**.
+2. Cliquez sur l'icône de modification ✏️ à côté du secret compromis et entrez la nouvelle valeur.
+3. Allez dans l'onglet **Actions** et relancez le workflow "Deploy via SFTP" (bouton **Run workflow**), ou faites simplement un nouveau `git push`.
+
+Le workflow générera le nouveau fichier `.env.local` avec les nouveaux secrets et l'enverra sur le serveur OUVATON par SFTP lors de la phase de "Bootstrap". Ainsi, votre serveur utilisera instantanément le nouveau secret pour les prochaines étapes de déploiement et pour l'application elle-même. C'est le moyen le plus sûr de corriger une fuite.
