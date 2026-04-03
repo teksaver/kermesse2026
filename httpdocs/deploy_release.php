@@ -125,6 +125,10 @@ try {
             '--env' => 'prod',
             '--no-warmup' => true,
         ],
+        'asset-map:compile' => [
+            'command' => 'asset-map:compile',
+            '--env' => 'prod',
+        ],
         'cache:warmup' => [
             'command' => 'cache:warmup',
             '--env' => 'prod',

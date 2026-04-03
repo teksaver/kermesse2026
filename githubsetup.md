@@ -170,7 +170,7 @@ Ouvaton n'expose pas de GUI pour lancer des commandes Doctrine apres le transfer
 4. GitHub verifie l'etat du serveur avec `/deploy_probe.php`.
 5. GitHub construit ensuite l'archive `deploy-package.zip` et l'envoie par SFTP.
 6. GitHub appelle `/deploy_release.php`.
-7. Ce script decompresse l'archive directement sur le serveur, puis lance `cache:clear`, `cache:warmup` et `doctrine:migrations:migrate`.
+7. Ce script decompresse l'archive directement sur le serveur, puis lance `cache:clear`, `asset-map:compile`, `cache:warmup` et `doctrine:migrations:migrate`.
 
 Ainsi, les migrations restent versionnees dans Git, rejouables, et ne dependent d'aucune intervention manuelle dans l'hebergeur.
 
