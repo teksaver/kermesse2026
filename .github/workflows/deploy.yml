@@ -209,7 +209,7 @@ jobs:
           port: 115 # Port personnalisé pour le SFTP
           password: ${{ secrets.SFTP_PASSWORD }}
           local_path: './deploy-package.zip'
-          remote_path: '/' # Déploiement à la racine du projet ; le web root public reste /httpdocs
+          remote_path: '/deploy-package.zip' # Upload explicite du zip pour éviter les ambiguïtés de chemin
           sftp_only: true # Force l'utilisation pure du protocole SFTP sans commandes SSH
           args: '-o ConnectTimeout=5'
 

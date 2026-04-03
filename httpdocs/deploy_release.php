@@ -6,7 +6,10 @@ header('Content-Type: application/json');
 
 $projectRoot = dirname(__DIR__);
 $envFile = $projectRoot.'/.env.local';
-$archivePath = $projectRoot.'/deploy-package.zip';
+$archiveCandidates = [
+    $projectRoot.'/deploy-package.zip',
+    $projectRoot.'/httpdocs/deploy-package.zip',
+];
 $tempDir = $projectRoot.'/var/deploy-extract';
 $suppliedSecret = $_GET['secret'] ?? $_POST['secret'] ?? '';
 
@@ -80,11 +83,13 @@ if (!class_exists(ZipArchive::class)) {
     return;
 }
 
-if (!is_file($archivePath)) {
+[$archivePath, $archiveFound] = resolveArchivePath($archiveCandidates);
+if (!$archiveFound) {
     http_response_code(404);
     echo json_encode([
         'success' => false,
         'error' => 'deploy-package.zip not found.',
+        'checked_paths' => $archiveCandidates,
     ], JSON_PRETTY_PRINT);
 
     return;
@@ -255,4 +260,20 @@ function removeDirectory(string $path): void
     }
 
     rmdir($path);
+}
+
+/**
+ * @param list<string> $candidates
+ *
+ * @return array{0:string,1:bool}
+ */
+function resolveArchivePath(array $candidates): array
+{
+    foreach ($candidates as $candidate) {
+        if (is_file($candidate)) {
+            return [$candidate, true];
+        }
+    }
+
+    return [$candidates[0] ?? '', false];
 }
