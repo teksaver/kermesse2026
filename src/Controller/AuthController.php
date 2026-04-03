@@ -7,7 +7,9 @@ use App\Entity\UserSession;
 use App\Repository\LoginTokenRepository;
 use App\Repository\UserRepository;
 use App\Service\LoginLinkManager;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +24,7 @@ class AuthController extends AbstractController
         UserRepository $userRepository,
         EntityManagerInterface $entityManager,
         LoginLinkManager $loginLinkManager,
+        LoggerInterface $logger,
     ): RedirectResponse {
         if (!$this->isCsrfTokenValid('register', (string) $request->request->get('_token'))) {
             $this->addFlash('error', 'Le formulaire de creation de compte a expire. Veuillez reessayer.');
@@ -37,17 +40,84 @@ class AuthController extends AbstractController
         }
 
         $user = $userRepository->findOneBy(['email' => $email]);
-        if (!$user instanceof User) {
-            $user = (new User())
-                ->setEmail($email)
-                ->setRoles(['ROLE_USER']);
+        if ($user instanceof User) {
+            if (!$user->isVerified()) {
+                try {
+                    $dispatch = $loginLinkManager->createAndSend($user, 'register');
+                } catch (\Throwable $exception) {
+                    $logger->error('Echec re-envoi lien de confirmation.', [
+                        'email' => $email,
+                        'exception' => $exception,
+                    ]);
+                    $this->addFlash('error', 'Le compte existe deja mais le renvoi de l e-mail a echoue.');
 
-            $entityManager->persist($user);
-            $entityManager->flush();
+                    return $this->redirectToRoute('app_homepage');
+                }
+
+                if (!$dispatch['mailEnabled']) {
+                    $this->addFlash('warning', 'Compte deja existant non valide pour '.$email.', mais l envoi e-mail est desactive (MAILER_DSN=null://null).');
+                } else {
+                    $this->addFlash('success', 'Compte deja existant non valide pour '.$email.'. Un nouveau lien de confirmation vient d etre envoye.');
+                }
+            } else {
+                $this->addFlash('warning', 'Un compte existe deja pour '.$email.'. Utilisez le formulaire de connexion.');
+            }
+
+            return $this->redirectToRoute('app_homepage');
         }
 
-        $loginLinkManager->createAndSend($user, 'register');
-        $this->addFlash('success', 'Si cette adresse peut etre utilisee, un lien de connexion a ete envoye.');
+        $user = (new User())
+            ->setEmail($email)
+            ->setRoles(['ROLE_USER']);
+
+        $entityManager->persist($user);
+        try {
+            $entityManager->flush();
+        } catch (UniqueConstraintViolationException) {
+            $entityManager->clear();
+            $existingUser = $userRepository->findOneBy(['email' => $email]);
+            if ($existingUser instanceof User && !$existingUser->isVerified()) {
+                try {
+                    $dispatch = $loginLinkManager->createAndSend($existingUser, 'register');
+                } catch (\Throwable $exception) {
+                    $logger->error('Echec re-envoi lien de confirmation apres conflit unicite.', [
+                        'email' => $email,
+                        'exception' => $exception,
+                    ]);
+                    $this->addFlash('error', 'Le compte existe deja mais le renvoi de l e-mail a echoue.');
+
+                    return $this->redirectToRoute('app_homepage');
+                }
+
+                if (!$dispatch['mailEnabled']) {
+                    $this->addFlash('warning', 'Compte deja existant non valide pour '.$email.', mais l envoi e-mail est desactive (MAILER_DSN=null://null).');
+                } else {
+                    $this->addFlash('success', 'Compte deja existant non valide pour '.$email.'. Un nouveau lien de confirmation vient d etre envoye.');
+                }
+            } else {
+                $this->addFlash('warning', 'Un compte existe deja pour '.$email.'. Utilisez le formulaire de connexion.');
+            }
+
+            return $this->redirectToRoute('app_homepage');
+        }
+
+        try {
+            $dispatch = $loginLinkManager->createAndSend($user, 'register');
+        } catch (\Throwable $exception) {
+            $logger->error('Echec envoi lien de creation de compte.', [
+                'email' => $email,
+                'exception' => $exception,
+            ]);
+            $this->addFlash('error', 'Le compte a ete cree mais l envoi de l e-mail a echoue. Reessayez plus tard.');
+
+            return $this->redirectToRoute('app_homepage');
+        }
+
+        if (!$dispatch['mailEnabled']) {
+            $this->addFlash('warning', 'Compte cree pour '.$email.', mais l envoi e-mail est desactive (MAILER_DSN=null://null).');
+        } else {
+            $this->addFlash('success', 'Compte cree pour '.$email.'. Un e-mail a ete envoye. Pensez a verifier aussi le dossier spam.');
+        }
 
         return $this->redirectToRoute('app_homepage');
     }
@@ -58,6 +128,7 @@ class AuthController extends AbstractController
         Request $request,
         UserRepository $userRepository,
         LoginLinkManager $loginLinkManager,
+        LoggerInterface $logger,
     ): RedirectResponse {
         if (!$this->isCsrfTokenValid('login', (string) $request->request->get('_token'))) {
             $this->addFlash('error', 'Le formulaire de connexion a expire. Veuillez reessayer.');
@@ -68,7 +139,25 @@ class AuthController extends AbstractController
         $email = strtolower(trim((string) $request->request->get('email')));
         $user = filter_var($email, FILTER_VALIDATE_EMAIL) ? $userRepository->findOneBy(['email' => $email]) : null;
         if ($user instanceof User) {
-            $loginLinkManager->createAndSend($user, 'login');
+            try {
+                $dispatch = $loginLinkManager->createAndSend($user, 'login');
+            } catch (\Throwable $exception) {
+                $logger->error('Echec envoi lien de connexion.', [
+                    'email' => $email,
+                    'exception' => $exception,
+                ]);
+                $this->addFlash('error', 'L envoi de l e-mail de connexion a echoue. Reessayez plus tard.');
+
+                return $this->redirectToRoute('app_homepage');
+            }
+
+            if (!$dispatch['mailEnabled']) {
+                $this->addFlash('warning', 'Le compte existe pour '.$email.', mais l envoi e-mail est desactive (MAILER_DSN=null://null).');
+            } else {
+                $this->addFlash('success', 'Lien de connexion envoye a '.$email.'. Pensez a verifier aussi le dossier spam.');
+            }
+
+            return $this->redirectToRoute('app_homepage');
         }
 
         $this->addFlash('success', 'Si un compte existe pour cette adresse, un lien de connexion a ete envoye.');

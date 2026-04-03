@@ -16,14 +16,18 @@ class LoginLinkMailer
         private readonly UrlGeneratorInterface $urlGenerator,
         #[Autowire('%env(MAILER_FROM)%')] private readonly string $fromAddress,
         #[Autowire('%env(MAILER_FROM_NAME)%')] private readonly string $fromName,
+        #[Autowire('%env(MAILER_DSN)%')] private readonly string $mailerDsn,
     ) {
     }
 
-    public function send(LoginToken $loginToken, string $plainToken): void
+    /**
+     * @return array{mailEnabled: bool}
+     */
+    public function send(LoginToken $loginToken, string $plainToken): array
     {
         $user = $loginToken->getUser();
         if (null === $user?->getEmail()) {
-            return;
+            return ['mailEnabled' => !$this->isNullTransport()];
         }
 
         $url = $this->urlGenerator->generate('app_auth_magic_link', [
@@ -43,5 +47,12 @@ class LoginLinkMailer
             ]);
 
         $this->mailer->send($email);
+
+        return ['mailEnabled' => !$this->isNullTransport()];
+    }
+
+    private function isNullTransport(): bool
+    {
+        return str_starts_with(strtolower(trim($this->mailerDsn)), 'null://');
     }
 }

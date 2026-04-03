@@ -18,7 +18,10 @@ class LoginLinkManager
     ) {
     }
 
-    public function createAndSend(User $user, string $purpose): void
+    /**
+     * @return array{mailEnabled: bool}
+     */
+    public function createAndSend(User $user, string $purpose): array
     {
         $now = new \DateTimeImmutable();
         $selector = bin2hex(random_bytes(16));
@@ -36,6 +39,6 @@ class LoginLinkManager
         $this->entityManager->persist($loginToken);
         $this->entityManager->flush();
 
-        $this->loginLinkMailer->send($loginToken, $plainToken);
+        return $this->loginLinkMailer->send($loginToken, $plainToken);
     }
 }
