@@ -16,7 +16,7 @@ security:
                 - App\Security\JwtCookieAuthenticator
 
     access_control:
-        - { path: ^/auth/logout$, roles: ROLE_USER }
+        - { path: ^/(index\.php/)?auth/logout$, roles: ROLE_USER }
 
 when@test:
     security:

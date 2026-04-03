@@ -15,7 +15,8 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class AuthController extends AbstractController
 {
-    #[Route('/auth/register', name: 'app_auth_register', methods: ['POST'])]
+    #[Route('/index.php/auth/register', name: 'app_auth_register', methods: ['POST'])]
+    #[Route('/auth/register', name: 'app_auth_register_pretty', methods: ['POST'])]
     public function register(
         Request $request,
         UserRepository $userRepository,
@@ -51,7 +52,8 @@ class AuthController extends AbstractController
         return $this->redirectToRoute('app_homepage');
     }
 
-    #[Route('/auth/login', name: 'app_auth_login', methods: ['POST'])]
+    #[Route('/index.php/auth/login', name: 'app_auth_login', methods: ['POST'])]
+    #[Route('/auth/login', name: 'app_auth_login_pretty', methods: ['POST'])]
     public function login(
         Request $request,
         UserRepository $userRepository,
@@ -74,7 +76,8 @@ class AuthController extends AbstractController
         return $this->redirectToRoute('app_homepage');
     }
 
-    #[Route('/auth/magic/{selector}/{token}', name: 'app_auth_magic_link', methods: ['GET'])]
+    #[Route('/index.php/auth/magic/{selector}/{token}', name: 'app_auth_magic_link', methods: ['GET'])]
+    #[Route('/auth/magic/{selector}/{token}', name: 'app_auth_magic_link_pretty', methods: ['GET'])]
     public function consumeMagicLink(
         string $selector,
         string $token,
@@ -118,7 +121,8 @@ class AuthController extends AbstractController
         return $this->redirectToRoute('app_homepage');
     }
 
-    #[Route('/auth/logout', name: 'app_auth_logout', methods: ['POST'])]
+    #[Route('/index.php/auth/logout', name: 'app_auth_logout', methods: ['POST'])]
+    #[Route('/auth/logout', name: 'app_auth_logout_pretty', methods: ['POST'])]
     public function logout(Request $request, EntityManagerInterface $entityManager): RedirectResponse
     {
         if (!$this->isCsrfTokenValid('logout', (string) $request->request->get('_token'))) {

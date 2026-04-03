@@ -49,6 +49,8 @@ Pour les configurer :
   - *Valeur*: Une seconde chaine aleatoire longue dediee a la signature des JWT
 - **Nom**: `WEBHOOK_SECRET`
   - *Valeur*: Un secret partage pour declencher la migration distante en securite
+- **Nom**: `LOG_VIEWER_TOKEN`
+  - *Valeur*: Un token secret dedie a l'affichage des logs runtime dans le navigateur
 
 ### Les repository variables GitHub :
 - **Nom**: `SITE_URL`
@@ -83,6 +85,9 @@ Pour les configurer :
 - `WEBHOOK_SECRET`
   - chaine aleatoire longue choisie par vous
   - exemple : `7x3VnP2qL9sK4mT8wZ1rH6cY5uB0eF3j`
+- `LOG_VIEWER_TOKEN`
+  - chaine aleatoire longue choisie par vous
+  - exemple : `n4R6vP8qT1mK3xS7bC0hL5zD9fW2yJae`
 - `SITE_URL`
   - seulement le domaine
   - exemple correct : `kermesse2026.fr`
@@ -118,6 +123,8 @@ Une fois les configurations faites et le dernier `push` de `deploy.yml` réalis�
 1. Allez dans l'onglet **Actions** de votre dépôt GitHub.
 2. Vous verrez l'exécution de "Deploy via SFTP".
 3. Cliquez dessus pour voir la progression : le workflow commence par envoyer un petit bootstrap applicatif, verifie l'environnement via `/deploy_probe.php`, puis envoie `deploy-package.zip` et appelle `/deploy_release.php` pour decompresser l'archive et executer les commandes de maintenance.
+
+Si le deploiement echoue, le workflow appelle automatiquement `/deploy_logs.php` et affiche les logs serveur recents dans la sortie GitHub Actions.
 
 ## 5. Pourquoi les migrations passent par GitHub Actions ?
 Ouvaton n'expose pas de GUI pour lancer des commandes Doctrine apres le transfert SFTP. Le workflow de deploiement contourne proprement cette limitation :
@@ -165,3 +172,91 @@ Si vous soupçonnez qu'un secret a fuité (comme le `WEBHOOK_SECRET`, le `DB_PAS
 3. Allez dans l'onglet **Actions** et relancez le workflow "Deploy via SFTP" (bouton **Run workflow**), ou faites simplement un nouveau `git push`.
 
 Le workflow générera le nouveau fichier `.env.local` avec les nouveaux secrets et l'enverra sur le serveur OUVATON par SFTP lors de la phase de "Bootstrap". Ainsi, votre serveur utilisera instantanément le nouveau secret pour les prochaines étapes de déploiement et pour l'application elle-même. C'est le moyen le plus sûr de corriger une fuite.
+
+## 8. Acceder aux logs et depanner une 404
+### Où lire les logs
+Vous avez deux voies simples :
+
+1. Dans GitHub Actions :
+- en cas d'echec, l'etape `Diagnostic logs serveur (si échec)` affiche le resultat de `/deploy_logs.php`
+- vous y verrez les fins de fichiers de logs Symfony et PHP
+
+2. En SFTP :
+- logs Symfony production : `var/log/prod.log`
+- logs Symfony development : `var/log/dev.log`
+- logs PHP potentiels selon l'hebergement : `error_log` et `httpdocs/error_log`
+
+### Visualiseur de logs runtime (sans CLI)
+Une page dediee est disponible pour consulter les logs directement depuis le navigateur :
+- URL : `https://<SITE_URL>/index.php/admin/logs?token=<LOG_VIEWER_TOKEN>`
+
+Fonctionnement :
+- la page affiche les dernieres lignes de `var/log/prod.log`, `var/log/dev.log`, `error_log`, `httpdocs/error_log`
+- le token est obligatoire (secret `LOG_VIEWER_TOKEN`)
+- vous pouvez ajuster le nombre de lignes avec `&lines=200` (entre 20 et 500)
+
+Exemple :
+`https://kermesse.ouvaton.org/index.php/admin/logs?token=VOTRE_TOKEN`
+
+Securite :
+- ne partagez pas cette URL publiquement
+- si besoin, changez `LOG_VIEWER_TOKEN` dans GitHub Secrets puis redeployez
+
+### Endpoints de diagnostic utiles
+- `https://<SITE_URL>/deploy_probe.php`
+- `https://<SITE_URL>/deploy_logs.php`
+- `https://<SITE_URL>/deploy_release.php`
+
+Ces endpoints exigent `WEBHOOK_SECRET` (en POST ou query string) et servent uniquement au deploiement.
+
+### Si vous voyez une 404 Apache brute dans le navigateur
+Message typique :
+`Not Found ... Apache/2.4 ...`
+
+Cela signifie generalement que la ressource demandee n'existe pas dans le web root.
+Checklist :
+1. Verifiez que `SITE_URL` est correct (domaine seul, sans `http://` ni `https://`).
+2. Verifiez que le workflow envoie bien le bootstrap vers `remote_path: '/'`.
+3. Verifiez en SFTP la presence de `httpdocs/deploy_probe.php`, `httpdocs/deploy_release.php`, `httpdocs/deploy_logs.php`.
+4. Verifiez que `httpdocs/index.php` existe aussi.
+5. Lancez ensuite `https://<SITE_URL>/deploy_probe.php` pour confirmer les chemins et fichiers detectes sur le serveur.
+
+## 9. Politique des fichiers .env (securite)
+### Quels fichiers peuvent etre commit ?
+- `.env` : oui, pour des valeurs par defaut non sensibles et des placeholders
+- `.env.dev` : oui eventuellement, uniquement pour des valeurs de dev non sensibles
+- `.env.test` : oui, pour les valeurs de test non sensibles
+
+### Quels fichiers ne doivent jamais etre commit ?
+- `.env.local`
+- `.env.dev.local`
+- `.env.test.local`
+- tout fichier contenant de vrais mots de passe, tokens, DSN de production, secrets webhook
+
+Le `.gitignore` du projet ignore deja correctement les variantes `*.local`.
+
+### Ou stocker vos secrets locaux (non commits) ?
+- usage general local : `.env.local`
+- specificite dev locale : `.env.dev.local`
+- specificite tests locaux : `.env.test.local`
+
+Exemple typique en local :
+- creer `.env.local`
+- y mettre vos valeurs reelles (`DB_PASS`, `WEBHOOK_SECRET`, `AUTH_JWT_SECRET`, `LOG_VIEWER_TOKEN`, etc.)
+- ne jamais pousser ce fichier
+
+### Alerte importante
+Si un secret a deja ete commit dans un fichier suivi (exemple: ancien `.env.dev`), il faut le considerer comme divulgue :
+1. Regenerer ce secret
+2. Mettre la nouvelle valeur dans GitHub Secrets/Variables
+3. Redeployer
+
+### Si la page d'accueil fonctionne mais un bouton POST retourne 404
+Exemple typique : clic sur `Recevoir mon lien de creation` puis 404 Apache.
+
+Cela indique souvent que la reecriture d'URL n'est pas activee pour les routes Symfony (`/auth/...`).
+Le projet gere maintenant ce cas en exposant aussi des routes en `/index.php/auth/...`.
+Si vous voyez encore ce symptome apres mise a jour :
+1. Confirmez que le serveur execute bien la derniere version de `src/Controller/AuthController.php`.
+2. Verifiez dans la source HTML de la homepage que les formulaires pointent vers `/index.php/auth/register` et `/index.php/auth/login`.
+3. Videz le cache navigateur puis rechargez la page avant de retester.

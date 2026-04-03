@@ -37,6 +37,7 @@ jobs:
           MAILER_FROM_NAME: ${{ vars.MAILER_FROM_NAME }}
           MAILER_ENVELOPE_SENDER: ${{ vars.MAILER_ENVELOPE_SENDER }}
           AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
+          LOG_VIEWER_TOKEN: ${{ secrets.LOG_VIEWER_TOKEN }}
           SFTP_SERVER: ${{ secrets.SFTP_SERVER }}
           SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
           SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
@@ -56,6 +57,7 @@ jobs:
             MAILER_FROM_NAME
             MAILER_ENVELOPE_SENDER
             AUTH_JWT_SECRET
+            LOG_VIEWER_TOKEN
             SFTP_SERVER
             SFTP_USERNAME
             SFTP_PASSWORD
@@ -89,6 +91,7 @@ jobs:
           MAILER_FROM_NAME: ${{ vars.MAILER_FROM_NAME }}
           MAILER_ENVELOPE_SENDER: ${{ vars.MAILER_ENVELOPE_SENDER }}
           AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
+          LOG_VIEWER_TOKEN: ${{ secrets.LOG_VIEWER_TOKEN }}
         run: |
           write_env() {
             key="$1"
@@ -114,6 +117,7 @@ jobs:
           write_env MAILER_FROM_NAME "$MAILER_FROM_NAME"
           write_env MAILER_ENVELOPE_SENDER "$MAILER_ENVELOPE_SENDER"
           write_env AUTH_JWT_SECRET "$AUTH_JWT_SECRET"
+          write_env LOG_VIEWER_TOKEN "$LOG_VIEWER_TOKEN"
           write_env AUTH_LOGIN_LINK_TTL "900"
           write_env AUTH_ACCESS_TOKEN_TTL "900"
           write_env AUTH_REFRESH_TOKEN_TTL "2592000"
@@ -221,4 +225,16 @@ jobs:
           fi
           if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
             exit 1
+          fi
+
+      - name: Diagnostic logs serveur (si échec)
+        if: ${{ failure() }}
+        run: |
+          logs_http_code=$(curl --show-error --silent --output webhook-logs-response.json --write-out "%{http_code}" -X POST "https://${{ vars.SITE_URL }}/deploy_logs.php" -d "secret=${{ secrets.WEBHOOK_SECRET }}")
+          echo "Logs endpoint HTTP status: $logs_http_code"
+          echo "Logs endpoint response:"
+          if [ -s webhook-logs-response.json ]; then
+            cat webhook-logs-response.json
+          else
+            echo "<empty response body>"
           fi

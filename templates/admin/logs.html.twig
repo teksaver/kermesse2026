@@ -1,0 +1,136 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Logs runtime{% endblock %}
+
+{% block stylesheets %}
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #141b2d;
+            --ink: #e5e7eb;
+            --muted: #9ca3af;
+            --accent: #22c55e;
+            --warn: #f59e0b;
+            --danger: #ef4444;
+            --border: rgba(156, 163, 175, 0.25);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1f2937 0%, var(--bg) 55%);
+            color: var(--ink);
+        }
+
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        p {
+            margin: 8px 0 0;
+            color: var(--muted);
+        }
+
+        .badge {
+            display: inline-block;
+            margin-top: 10px;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .ok { background: rgba(34, 197, 94, 0.18); color: var(--accent); }
+        .ko { background: rgba(239, 68, 68, 0.18); color: var(--danger); }
+
+        .log-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: baseline;
+            flex-wrap: wrap;
+        }
+
+        .log-title h2 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .path {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        pre {
+            margin: 10px 0 0;
+            padding: 12px;
+            background: #0a0f1a;
+            border-radius: 12px;
+            border: 1px solid rgba(156, 163, 175, 0.16);
+            color: #d1fae5;
+            overflow-x: auto;
+            max-height: 380px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: "IBM Plex Mono", "Consolas", monospace;
+            font-size: 0.83rem;
+            line-height: 1.35;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="wrap">
+        <section class="card">
+            <h1>Visualiseur de logs runtime</h1>
+            <p>Affiche les {{ lineCount }} dernieres lignes de chaque fichier suivi.</p>
+
+            {% if authorized %}
+                <span class="badge ok">Acces autorise</span>
+            {% else %}
+                <span class="badge ko">Acces refuse</span>
+                <p>{{ message }}</p>
+            {% endif %}
+        </section>
+
+        {% if authorized %}
+            {% for log in logs %}
+                <section class="card">
+                    <div class="log-title">
+                        <h2>{{ log.label }}</h2>
+                        <span class="path">{{ log.path }}</span>
+                    </div>
+
+                    {% if log.exists %}
+                        {% if log.tail is not empty %}
+                            <pre>{{ log.tail }}</pre>
+                        {% else %}
+                            <pre>Le fichier existe mais ne contient pas encore de lignes.</pre>
+                        {% endif %}
+                    {% else %}
+                        <pre>Fichier introuvable.</pre>
+                    {% endif %}
+                </section>
+            {% endfor %}
+        {% endif %}
+    </div>
+{% endblock %}
+
