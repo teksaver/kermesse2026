@@ -199,6 +199,22 @@ Le DKIM ne se configure pas dans `deploy.yml` ni dans Symfony : il doit etre pub
 
 Le choix retenu ici est le port `587` avec `STARTTLS`, qui est en general le plus simple et le plus interoperable pour un envoi applicatif moderne.
 
+## 6.bis Envoi e-mail sans worker (important sur hebergement mutualise)
+Le projet est configure pour envoyer les e-mails en mode synchrone (`sync`) pour `SendEmailMessage`.
+Consequence :
+- pas de dependance a une file Messenger en base
+- pas besoin de table `messenger_messages`
+- pas besoin de worker Messenger en tache de fond
+
+Cette configuration evite l'erreur :
+`Table ... messenger_messages doesn't exist`
+
+Si vous voulez revenir plus tard a un mode asynchrone :
+1. remettre le routage mail vers `async`
+2. configurer un transport de queue (Doctrine/Redis/AMQP)
+3. creer les tables necessaires
+4. lancer un worker en continu
+
 ## 7. Remplacer un secret fuité (Rotation des clés)
 Si vous soupçonnez qu'un secret a fuité (comme le `WEBHOOK_SECRET`, le `DB_PASS`, ou l'`APP_SECRET`), inutile d'intervenir manuellement sur votre hébergement. Le processus de déploiement gère automatiquement la rotation des clés :
 
@@ -208,7 +224,7 @@ Si vous soupçonnez qu'un secret a fuité (comme le `WEBHOOK_SECRET`, le `DB_PAS
 
 Le workflow générera le nouveau fichier `.env.local` avec les nouveaux secrets et l'enverra sur le serveur OUVATON par SFTP lors de la phase de "Bootstrap". Ainsi, votre serveur utilisera instantanément le nouveau secret pour les prochaines étapes de déploiement et pour l'application elle-même. C'est le moyen le plus sûr de corriger une fuite.
 
-## 8. Acceder aux logs et depanner une 404
+## 8. Acceder aux logs et diagnostiquer les erreurs runtime
 ### Où lire les logs
 Vous avez deux voies simples :
 
@@ -244,17 +260,12 @@ Securite :
 
 Ces endpoints exigent `WEBHOOK_SECRET` (en POST ou query string) et servent uniquement au deploiement.
 
-### Si vous voyez une 404 Apache brute dans le navigateur
-Message typique :
-`Not Found ... Apache/2.4 ...`
-
-Cela signifie generalement que la ressource demandee n'existe pas dans le web root.
-Checklist :
-1. Verifiez que `SITE_URL` est correct (domaine seul, sans `http://` ni `https://`).
-2. Verifiez que le workflow envoie bien le bootstrap vers `remote_path: '/'`.
-3. Verifiez en SFTP la presence de `httpdocs/deploy_probe.php`, `httpdocs/deploy_release.php`, `httpdocs/deploy_logs.php`.
-4. Verifiez que `httpdocs/index.php` existe aussi.
-5. Lancez ensuite `https://<SITE_URL>/deploy_probe.php` pour confirmer les chemins et fichiers detectes sur le serveur.
+### Procedure recommandee en cas d'erreur 500
+Quand vous voyez `Oops! An Error Occurred` en production :
+1. Ouvrez `https://<SITE_URL>/index.php/admin/logs?token=<LOG_VIEWER_TOKEN>`
+2. Augmentez le volume si besoin avec `&lines=300`
+3. Analysez d'abord `var/log/prod.log`, puis `error_log` et `httpdocs/error_log`
+4. Si la page de logs ne repond pas, utilisez `https://<SITE_URL>/deploy_logs.php?secret=<WEBHOOK_SECRET>`
 
 ## 9. Politique des fichiers .env (securite)
 ### Quels fichiers peuvent etre commit ?
@@ -285,13 +296,3 @@ Si un secret a deja ete commit dans un fichier suivi (exemple: ancien `.env.dev`
 1. Regenerer ce secret
 2. Mettre la nouvelle valeur dans GitHub Secrets/Variables
 3. Redeployer
-
-### Si la page d'accueil fonctionne mais un bouton POST retourne 404
-Exemple typique : clic sur `Recevoir mon lien de creation` puis 404 Apache.
-
-Cela indique souvent que la reecriture d'URL n'est pas activee pour les routes Symfony (`/auth/...`).
-Le projet gere maintenant ce cas en exposant aussi des routes en `/index.php/auth/...`.
-Si vous voyez encore ce symptome apres mise a jour :
-1. Confirmez que le serveur execute bien la derniere version de `src/Controller/AuthController.php`.
-2. Verifiez dans la source HTML de la homepage que les formulaires pointent vers `/index.php/auth/register` et `/index.php/auth/login`.
-3. Videz le cache navigateur puis rechargez la page avant de retester.
