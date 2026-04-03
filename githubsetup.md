@@ -52,6 +52,41 @@ Pour les configurer :
 - **Nom**: `LOG_VIEWER_TOKEN`
   - *Valeur*: Un token secret dedie a l'affichage des logs runtime dans le navigateur
 
+### Regles de format recommandees pour chaque secret
+- `APP_SECRET`
+  - longueur minimale recommandee: `32` caracteres (mieux: `48` a `64`)
+  - contenu: chaine aleatoire forte
+  - caracteres conseilles: lettres maj/min, chiffres
+  - caracteres speciaux: autorises, mais pas necessaires
+  - contrainte: ne pas reutiliser cette valeur pour un autre secret
+
+- `AUTH_JWT_SECRET`
+  - longueur minimale recommandee: `32` caracteres (mieux: `64`)
+  - contenu: chaine aleatoire forte, differente de `APP_SECRET`
+  - caracteres conseilles: lettres maj/min, chiffres
+  - caracteres speciaux: autorises, mais pas necessaires
+  - contrainte: valeur stable tant que vous ne souhaitez pas invalider toutes les sessions JWT
+
+- `WEBHOOK_SECRET`
+  - longueur minimale recommandee: `32` caracteres (mieux: `48` a `64`)
+  - contenu: chaine aleatoire forte
+  - caracteres conseilles: lettres maj/min, chiffres
+  - caracteres speciaux: possibles, mais evitez espaces, guillemets et `&` pour simplifier l'usage dans les requetes HTTP
+  - contrainte: garder la meme valeur cote serveur et GitHub Secrets
+
+- `LOG_VIEWER_TOKEN`
+  - longueur minimale recommandee: `32` caracteres
+  - contenu: chaine aleatoire forte
+  - caracteres conseilles: lettres maj/min, chiffres
+  - caracteres speciaux: possibles, mais evitez ceux qui doivent etre echappes dans une URL (espace, `?`, `&`, `#`, `%`)
+  - contrainte: ce token transite dans l'URL du visualiseur, donc privilegiez un format URL-friendly
+
+### Format simple conseille pour tous les secrets
+Pour limiter les erreurs de quoting/URL, utilisez ce format unique partout :
+- uniquement `[A-Za-z0-9]`
+- longueur `48` ou `64`
+- exemple de style: `7x3VnP2qL9sK4mT8wZ1rH6cY5uB0eF3jQ4nM8tR2yK6pD9s`
+
 ### Les repository variables GitHub :
 - **Nom**: `SITE_URL`
   - *Valeur attendue*: uniquement le nom de domaine public, sans `http://` ni `https://`
